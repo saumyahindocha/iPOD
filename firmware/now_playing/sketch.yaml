@@ -1,0 +1,2 @@
+# Board settings for this sketch: Pico 2 W with Bluetooth turned on
+default_fqbn: rp2040:rp2040:rpipico2w:ipbtstack=ipv4btcble

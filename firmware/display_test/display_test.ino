@@ -5,7 +5,7 @@
 //   1. Backlight turns on, screen flashes red, green, blue
 //   2. A "Pod" title screen with the words "Touch me"
 //   3. Wherever you press, a dot appears; the raw touch numbers show at the bottom
-//      (and in the Serial Monitor at 115200 baud) - note them down for calibration
+//      (and in the Serial Monitor at 115200 baud); dots should land under your finger
 //
 // Wiring (Pico 2 W):
 //   Display: CS GP17, DC GP16, RESET GP21, MOSI GP19, SCK GP18, LED GP13, MISO not connected
@@ -23,9 +23,10 @@ const int TOUCH_CS = 22, TOUCH_IRQ = 26;
 Adafruit_ILI9341 tft(&SPI, TFT_DC, TFT_CS, TFT_RST);
 XPT2046_Touchscreen touch(TOUCH_CS, TOUCH_IRQ);
 
-// Rough calibration for typical 2.8" boards; we'll fine-tune from your readings
-const int RAW_X_MIN = 300, RAW_X_MAX = 3800;
-const int RAW_Y_MIN = 300, RAW_Y_MAX = 3800;
+// Touch calibration, measured on this board (2026-10-07).
+// Both axes run backwards relative to the screen, so "left" and "top" are the HIGH raw values.
+const int RAW_X_LEFT = 3540, RAW_X_RIGHT = 565;
+const int RAW_Y_TOP  = 3680, RAW_Y_BOTTOM = 380;
 
 void drawHome() {
   tft.fillScreen(ILI9341_BLACK);
@@ -68,8 +69,8 @@ void loop() {
   if (!touch.touched()) return;
 
   TS_Point p = touch.getPoint();
-  int x = constrain(map(p.x, RAW_X_MIN, RAW_X_MAX, 0, tft.width() - 1), 0, tft.width() - 1);
-  int y = constrain(map(p.y, RAW_Y_MIN, RAW_Y_MAX, 0, tft.height() - 1), 0, tft.height() - 1);
+  int x = constrain(map(p.x, RAW_X_LEFT, RAW_X_RIGHT, 0, tft.width() - 1), 0, tft.width() - 1);
+  int y = constrain(map(p.y, RAW_Y_TOP, RAW_Y_BOTTOM, 0, tft.height() - 1), 0, tft.height() - 1);
 
   tft.fillCircle(x, y, 4, ILI9341_YELLOW);
 

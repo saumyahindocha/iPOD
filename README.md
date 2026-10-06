@@ -42,6 +42,8 @@ The Pico 2 W replaced an earlier ESP32-S3 plan because the ESP32-S3 has no Bluet
 | T_DO | GP20 |
 | T_IRQ | GP26 |
 
+Touch calibration (this board): both axes are reversed. Raw X ≈ 3540 at the left edge and ≈ 565 at the right; raw Y ≈ 3680 at the top and ≈ 380 at the bottom.
+
 ### PCM5102 DAC (I2S)
 
 | DAC pin | Pico 2 W |
@@ -69,6 +71,7 @@ To flash: open the latest run under **Actions**, download the **pod-firmware** a
 | `tone_test` | 440 Hz tone through the DAC (I2S wiring check) |
 | `bt_sink` | Bluetooth A2DP receiver named "Pod": phone → DAC → headphones |
 | `display_test` | Colour test, title screen and touch dots on the ILI9341 + XPT2046 |
+| `now_playing` | Bluetooth audio + Now Playing screen: track, artist, album and touch controls |
 
 ## Repository layout
 

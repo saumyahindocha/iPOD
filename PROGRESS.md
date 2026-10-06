@@ -10,14 +10,17 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 - `blink` works: build and flashing pipeline confirmed
 - `tone_test` works: steady 440 Hz tone through the PCM5102 DAC, so the I2S wiring (GP9/GP10/GP11) is confirmed
 - `bt_sink` works: iPhone pairs with "Pod" and streams Spotify through the DAC to headphones (core requirement met)
-- Added `display_test` for the screen and touch
+- `display_test` works: screen and touch both respond
+- Calibrated touch from corner readings: both axes run backwards (dots were landing in the opposite corner)
+- Added `now_playing`: first combined firmware (Bluetooth audio + track info on screen + touch controls)
 
 **Fixed**
 - Breadboard wiring didn't match the plan: T_DO was on GP21, RESET on GP20, MOSI on GP21 and display MISO connected. Moved to RESET → GP21, T_DO → GP20, MOSI → GP19, MISO disconnected (GP21 isn't a valid SPI0 data pin)
 - Local Arduino IDE compiles failed because the laptop's antivirus removed parts of the compiler toolchain; moved compiling to GitHub Actions
 
 **Next**
-- Bring up the display and touch with `display_test`, then calibrate touch
+- Test `now_playing` on the iPhone: track info updates, buttons respond, audio stays clean while the screen redraws
+- Work out how to get album art from the iPhone for the Poster layout
 
 ## 2026-09-26 — Repository started
 
