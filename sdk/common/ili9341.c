@@ -2,6 +2,7 @@
 #include "pod_pins.h"
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
+#include "pod_spi_lock.h"
 
 static inline void cs(bool active) { gpio_put(POD_TFT_CS_PIN, !active); }
 static inline void dc(bool data)   { gpio_put(POD_TFT_DC_PIN, data); }
@@ -33,9 +34,10 @@ static void set_window(int x1, int y1, int x2, int y2) {
 
 void ili9341_backlight(bool on) { gpio_put(POD_TFT_LED_PIN, on); }
 
-void ili9341_set_madctl(uint8_t m) { cmd_args(0x36, &m, 1); }
+void ili9341_set_madctl(uint8_t m) { pod_spi_lock(); cmd_args(0x36, &m, 1); pod_spi_unlock(); }
 
 void ili9341_init(void) {
+    pod_spi_lock();
     spi_init(POD_TFT_SPI, POD_TFT_BAUD);
     spi_set_format(POD_TFT_SPI, 8, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
     gpio_set_function(POD_TFT_SCK_PIN, GPIO_FUNC_SPI);
@@ -83,6 +85,7 @@ void ili9341_init(void) {
     }
     write_cmd(0x11); sleep_ms(120);                       // SLPOUT
     write_cmd(0x29); sleep_ms(20);                        // DISPON
+    pod_spi_unlock();
     ili9341_backlight(true);
 }
 
@@ -94,17 +97,20 @@ void ili9341_fill_rect(int x, int y, int w, int h, uint16_t color) {
     if (y + h > ILI9341_H) h = ILI9341_H - y;
     if (w <= 0 || h <= 0) return;
 
+    pod_spi_lock();
     set_window(x, y, x + w - 1, y + h - 1);
     uint8_t line[2 * ILI9341_W];
     for (int i = 0; i < w; i++) { line[2 * i] = color >> 8; line[2 * i + 1] = color & 0xFF; }
     dc(true); cs(true);
     for (int r = 0; r < h; r++) spi_write_blocking(POD_TFT_SPI, line, 2 * w);
     cs(false);
+    pod_spi_unlock();
 }
 
 void ili9341_fill(uint16_t color) { ili9341_fill_rect(0, 0, ILI9341_W, ILI9341_H, color); }
 
 void ili9341_flush(int x1, int y1, int x2, int y2, const uint16_t *px) {
+    pod_spi_lock();
     set_window(x1, y1, x2, y2);
     size_t n = (size_t)(x2 - x1 + 1) * (size_t)(y2 - y1 + 1);
     uint8_t chunk[128];
@@ -116,18 +122,28 @@ void ili9341_flush(int x1, int y1, int x2, int y2, const uint16_t *px) {
         px += k; n -= k;
     }
     cs(false);
+    pod_spi_unlock();
 }
 
+// Sent in bands of BLIT_BAND rows, releasing the shared SPI bus in between, so a
+// full-screen update never blocks the SD card (and therefore audio) for more than
+// a few milliseconds.
+#define BLIT_BAND 24
 void ili9341_blit_be(int x, int y, int w, int h, const uint16_t *fb, int stride) {
     if (w <= 0 || h <= 0) return;
-    set_window(x, y, x + w - 1, y + h - 1);
-    dc(true); cs(true);
-    const uint16_t *row = fb + (size_t)y * (size_t)stride + (size_t)x;
-    if (w == stride) {
-        spi_write_blocking(POD_TFT_SPI, (const uint8_t *)row, (size_t)w * (size_t)h * 2);
-    } else {
-        for (int r = 0; r < h; r++, row += stride)
-            spi_write_blocking(POD_TFT_SPI, (const uint8_t *)row, (size_t)w * 2);
+    for (int y0 = y; y0 < y + h; y0 += BLIT_BAND) {
+        int bh = (y + h - y0) < BLIT_BAND ? (y + h - y0) : BLIT_BAND;
+        const uint16_t *row = fb + (size_t)y0 * (size_t)stride + (size_t)x;
+        pod_spi_lock();
+        set_window(x, y0, x + w - 1, y0 + bh - 1);
+        dc(true); cs(true);
+        if (w == stride) {
+            spi_write_blocking(POD_TFT_SPI, (const uint8_t *)row, (size_t)w * (size_t)bh * 2);
+        } else {
+            for (int r = 0; r < bh; r++, row += stride)
+                spi_write_blocking(POD_TFT_SPI, (const uint8_t *)row, (size_t)w * 2);
+        }
+        cs(false);
+        pod_spi_unlock();
     }
-    cs(false);
 }

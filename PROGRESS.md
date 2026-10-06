@@ -2,6 +2,20 @@
 
 Newest entries at the top. Each entry: what was done, what broke, what's next.
 
+## 2026-10-07 (later) — Home screen, SD player, battery
+
+**Done (built and tested on a PC, waiting for the SD card + wires to test on hardware)**
+- Home screen: choose **Phone** or **SD card**; tapping the top-left corner returns to it
+- SD card player in `sdk/sd_player/`: library browser (folders first, A–Z, drag to scroll), MP3 + WAV, tags and cover art (embedded JPEG or cover.jpg), drag-to-seek, hold-to-scrub, auto-advance
+- Track reader tested on a PC with CBR/VBR MP3, MPEG-2 mono, ID3v2.3/2.4 (UTF-8 and UTF-16), WAV 16/24-bit: tags, covers, durations and seek positions all correct
+- SPI bus lock so the screen, touch and SD card share SPI0; full-screen updates release the bus every 24 rows
+- Battery icon + "Battery low" warning below 15 %, from a MAX17048 fuel gauge (hidden when none is fitted)
+- Main firmware renamed to `pod.uf2`; core-0 stack raised to 4 KB for the MP3 decoder and FatFs
+
+**Next**
+- Wire the SD header (CS GP7, SCK GP18, MOSI GP19, MISO GP20), test SD mode
+- PCB design (see `docs/pcb-plan.md`)
+
 ## 2026-10-07 — First firmware running
 
 **Done**
@@ -24,7 +38,7 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 **Next**
 - Test the `sdk/` Poster firmware on hardware: album art download, colour fade, progress bar, volume, touch controls
 - Run the robustness and measurement tests in sdk/README.md before PCB design
-- Planned: home screen to choose Phone or SD card; SD card player (MP3/WAV, cover art from tags, full seek); Bluetooth output to AirPods for SD music
+- Planned: Bluetooth output to AirPods for SD music
 
 ## 2026-09-26 — Repository started
 

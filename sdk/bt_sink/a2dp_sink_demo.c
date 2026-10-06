@@ -68,6 +68,8 @@
 #include <string.h>
 
 #include "btstack.h"
+#include "pod_battery.h"
+#include "hardware/watchdog.h"
 #include "pod_display.h"   // Pod patch: now-playing screen on core 1
 
 #include "btstack_resample.h"
@@ -851,7 +853,9 @@ static uint8_t a2dp_sink_demo_set_volume_percentage(uint16_t avrcp_cid, int new_
 static void pod_ui_timer_handler(btstack_timer_source_t * ts){
     uint16_t cid = a2dp_sink_demo_avrcp_connection.avrcp_cid;
     pod_cmd_t cmd;
+    bool pod_home_requested = false;
     while ((cmd = pod_display_take_command()) != POD_CMD_NONE){
+        if (cmd == POD_CMD_HOME) { pod_home_requested = true; continue; }
         if (cid == 0) continue;
         switch (cmd){
             case POD_CMD_PREV:      avrcp_controller_backward(cid); break;
@@ -871,6 +875,12 @@ static void pod_ui_timer_handler(btstack_timer_source_t * ts){
         }
         printf("Pod: touch command %d sent\n", (int) cmd);
     }
+    if (pod_home_requested) {                   // "Pod" tapped in the status bar: back to the home screen
+        printf("Pod: back to the home screen\n");
+        watchdog_reboot(0, 0, 10);
+        while (true) tight_loop_contents();
+    }
+    if ((pod_ui_ticks % 125) == 0) pod_battery_poll();     // every 5 s
 
     // Volume slider on the Pod: apply locally and tell the phone (its slider follows).
     // Rate-limited so dragging doesn't flood the phone with notifications.
@@ -885,7 +895,8 @@ static void pod_ui_timer_handler(btstack_timer_source_t * ts){
         last_volume_ms = now_ms;
     }
 
-    if (cid != 0 && (++pod_ui_ticks % 25) == 0) avrcp_controller_get_play_status(cid);
+    ++pod_ui_ticks;
+    if (cid != 0 && (pod_ui_ticks % 25) == 0) avrcp_controller_get_play_status(cid);
     btstack_run_loop_set_timer(ts, 40);
     btstack_run_loop_add_timer(ts);
 }

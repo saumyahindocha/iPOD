@@ -2,6 +2,7 @@
 #include "pod_pins.h"
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
+#include "pod_spi_lock.h"
 
 // Touch shares SPI0 with the display. Every transaction drops the bus to
 // touch speed and restores display speed afterwards. Only ever call this
@@ -15,6 +16,11 @@
 #define Z_THRESHOLD 60     // lower = lighter touch; 300 needed a firm press (tuned on hardware 2026-10-07)
 
 void xpt2046_init(void) {
+    // An SD card in the slot shares MISO; hold its chip-select high until SD mode uses it.
+    gpio_init(POD_SD_CS_PIN);
+    gpio_set_dir(POD_SD_CS_PIN, GPIO_OUT);
+    gpio_put(POD_SD_CS_PIN, 1);
+
     // SPI0 itself (and SCK/MOSI) is initialised by ili9341_init(); add RX.
     gpio_set_function(POD_SPI_MISO_PIN, GPIO_FUNC_SPI);
 
@@ -36,6 +42,7 @@ static uint16_t xfer(uint8_t cmd) {
 }
 
 bool xpt2046_read(xpt2046_raw_t *out) {
+    pod_spi_lock();
     spi_set_baudrate(POD_SPI, POD_TOUCH_BAUD);
     gpio_put(POD_TOUCH_CS_PIN, 0);
     uint16_t z1 = xfer(CMD_Z1), z2 = xfer(CMD_Z2);
@@ -49,6 +56,7 @@ bool xpt2046_read(xpt2046_raw_t *out) {
     xfer(0x80);   // power down, re-arm PENIRQ
     gpio_put(POD_TOUCH_CS_PIN, 1);
     spi_set_baudrate(POD_SPI, POD_TFT_BAUD);
+    pod_spi_unlock();
     if (!ok) return false;
 
     for (int i = 0; i < 3; i++) for (int j = i + 1; j < 4; j++) {

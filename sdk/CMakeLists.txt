@@ -26,31 +26,47 @@ pico_add_extra_outputs(pod_dac_test)
 
 # ------------------------------------------------------ Display + touch test
 add_executable(pod_display_test
-    display_test/main.c common/ili9341.c common/xpt2046.c)
+    display_test/main.c common/ili9341.c common/xpt2046.c common/pod_spi_lock.c)
 target_include_directories(pod_display_test PRIVATE ${POD_COMMON})
 target_link_libraries(pod_display_test PRIVATE pico_stdlib hardware_spi)
 pico_enable_stdio_usb(pod_display_test 1)
 pico_enable_stdio_uart(pod_display_test 0)
 pico_add_extra_outputs(pod_display_test)
 
-# ------------------------------------------------ Bluetooth A2DP sink -> DAC
-add_executable(pod_bt_sink
+# ----------------------------------------- Pod main firmware (pod.uf2)
+# Home screen -> Phone mode (Bluetooth A2DP sink + album art) or SD card mode
+# (MP3/WAV player). Both use the Poster UI on core 1.
+add_executable(pod
     bt_sink/main.c
     bt_sink/btstack_audio_pico.c
     bt_sink/a2dp_sink_demo.c
-    common/pod_display.c            # Option C now-playing screen, runs on core 1
+    common/pod_display.c            # home, Now Playing, library list - runs on core 1
     common/pod_gfx.c                # anti-aliased framebuffer renderer
     common/pod_fonts.c              # Inter, pre-rendered by tools/gen_fonts.py
+    common/pod_spi_lock.c           # display, touch and SD card share SPI0
+    common/pod_battery.c            # MAX17048 fuel gauge + low-battery warning
+    common/sd_card.c                # SD over SPI
     common/ili9341.c
     common/xpt2046.c
+    sd_player/sd_player.c           # SD mode: browser + MP3/WAV playback on core 0
+    sd_player/track_meta.c          # tags, cover art, duration, seek table
+    third_party/fatfs/ff.c          # ChaN's FatFs (read-only, FAT32 + exFAT)
+    third_party/fatfs/ffunicode.c
+    third_party/fatfs/diskio_sd.c
     third_party/tjpgd/tjpgd.c)      # ChaN's TJpgDec (via Bodmer's TJpg_Decoder)
-target_include_directories(pod_bt_sink PRIVATE
-    ${CMAKE_CURRENT_LIST_DIR}/bt_sink ${POD_COMMON} ${CMAKE_CURRENT_LIST_DIR}/third_party/tjpgd)
-target_compile_definitions(pod_bt_sink PRIVATE
+target_include_directories(pod PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/bt_sink ${POD_COMMON}
+    ${CMAKE_CURRENT_LIST_DIR}/sd_player
+    ${CMAKE_CURRENT_LIST_DIR}/third_party/tjpgd
+    ${CMAKE_CURRENT_LIST_DIR}/third_party/fatfs
+    ${CMAKE_CURRENT_LIST_DIR}/third_party/minimp3)
+target_compile_definitions(pod PRIVATE
     USING_I2C=1                         # (sic) - upstream name; enables the I2S audio sink
     PICO_AUDIO_I2S_DATA_PIN=9
-    PICO_AUDIO_I2S_CLOCK_PIN_BASE=10)
-target_link_libraries(pod_bt_sink PRIVATE
+    PICO_AUDIO_I2S_CLOCK_PIN_BASE=10
+    PICO_STACK_SIZE=0x1000              # core 0: 4 KB (fills SCRATCH_Y); MP3 + FatFs need more than 2 KB
+    PICO_CORE1_STACK_SIZE=0x800)
+target_link_libraries(pod PRIVATE
     pico_stdlib
     pico_cyw43_arch_none
     pico_btstack_cyw43
@@ -62,7 +78,10 @@ target_link_libraries(pod_bt_sink PRIVATE
     pico_sync
     pico_flash
     hardware_flash
-    hardware_spi)
-pico_enable_stdio_usb(pod_bt_sink 1)    # logs over USB - no UART adapter needed
-pico_enable_stdio_uart(pod_bt_sink 0)
-pico_add_extra_outputs(pod_bt_sink)
+    hardware_spi
+    hardware_i2c
+    hardware_dma
+    hardware_watchdog)
+pico_enable_stdio_usb(pod 1)    # logs over USB - no UART adapter needed
+pico_enable_stdio_uart(pod 0)
+pico_add_extra_outputs(pod)

@@ -1,7 +1,9 @@
 #include "pod_display.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
@@ -30,16 +32,26 @@
 #define TIME_Y       271
 #define BTN_Y        300            // transport row centre
 #define BTN_R        17
+#define STATUS_TAP_W 120            // left part of the status bar is a button (Home / Library)
+
+// Library list
+#define LIST_HDR_H   44
+#define ROW_H        40
 
 static const rgb_t WHITE = {255, 255, 255};
 static const rgb_t IDLE_BASE = {34, 34, 40};
+static const rgb_t LOW_RED = {235, 72, 72};
+static const rgb_t CHARGE_GREEN = {80, 210, 120};
 
 #define TXT_LEN 160
+
+enum { SCREEN_NOW = 0, SCREEN_LIST = 1 };
 
 // ================================================================== mailbox
 enum {
     D_STATUS = 1u << 0, D_TEXT = 1u << 1, D_PLAY = 1u << 2, D_VOL = 1u << 3,
     D_ART = 1u << 4, D_ART_CLEAR = 1u << 5, D_PROGRESS = 1u << 6,
+    D_BATT = 1u << 7, D_TOAST = 1u << 8, D_SCREEN = 1u << 9, D_LIST = 1u << 10,
 };
 
 typedef struct {
@@ -50,12 +62,18 @@ typedef struct {
     uint32_t pos_ms, len_ms;
     uint64_t pos_stamp_us;
     size_t art_len;
+    int battery;                    // -1 = no gauge
+    bool charging;
+    char toast[48];
+    int screen;
+    int list_highlight;
 } pod_state_t;
 
 static mutex_t mbox_lock;
 static uint32_t mbox_dirty;
 static pod_state_t mbox;
 static uint8_t mbox_art[POD_ART_MAX_BYTES];
+static bool sd_mode;                // fixed before core 1 starts
 
 // Touch -> core 0 command queue (single producer: core 1, single consumer: core 0)
 #define CMDQ_LEN 8
@@ -63,6 +81,8 @@ static volatile uint8_t cmdq[CMDQ_LEN];
 static volatile uint32_t cmdq_w, cmdq_r;
 static volatile int mbox_vol_req = -1;       // latest volume set on the Pod's slider
 static volatile uint32_t mbox_vol_seq;       // bumped on every slider change (core 0 tracks what it applied)
+static volatile int mbox_seek_req;           // permille, for POD_CMD_SEEK
+static volatile int mbox_list_req;           // row, for POD_CMD_LIST_SELECT
 
 static void push_cmd(pod_cmd_t c) {
     uint32_t w = cmdq_w;
@@ -71,6 +91,15 @@ static void push_cmd(pod_cmd_t c) {
     __dmb();
     cmdq_w = w + 1;
 }
+
+// Library list: names in one pool. Own lock, because core 1 reads it while drawing.
+static mutex_t list_lock;
+static char list_pool[POD_LIST_POOL];
+static uint16_t list_off[POD_LIST_MAX];
+static uint8_t list_folder[POD_LIST_MAX];
+static int list_n, list_used;
+static char list_title[64];
+static bool list_can_back;
 
 // core-1-private
 static pod_state_t cur;
@@ -177,6 +206,61 @@ static void calibrate(void) {
 }
 
 // ============================================================== rendering
+static void round_rect(int x, int y, int w, int h, int r, rgb_t c) {
+    gfx_fill_rect(x + r, y, w - 2 * r, h, c);
+    gfx_fill_rect(x, y + r, r, h - 2 * r, c);
+    gfx_fill_rect(x + w - r, y + r, r, h - 2 * r, c);
+    gfx_circle(x + r, y + r, r, c);
+    gfx_circle(x + w - r - 1, y + r, r, c);
+    gfx_circle(x + r, y + h - r - 1, r, c);
+    gfx_circle(x + w - r - 1, y + h - r - 1, r, c);
+}
+
+static void draw_chevron_left(int x, int y, int h, rgb_t c) {   // "<" made of two thin triangles
+    float m = y + h / 2.0f;
+    gfx_triangle(x, m, x + h / 2.0f + 1, y, x + h / 2.0f + 3, y + 1.5f, c);
+    gfx_triangle(x + 1.2f, m - 1.2f, x + h / 2.0f + 3, y + 1.5f, x + 2.5f, m, c);
+    gfx_triangle(x, m, x + h / 2.0f + 3, y + h - 1.5f, x + h / 2.0f + 1, y + h, c);
+    gfx_triangle(x + 2.5f, m, x + h / 2.0f + 3, y + h - 1.5f, x + 1.2f, m + 1.2f, c);
+}
+
+static void draw_chevron_right(int x, int y, int h, rgb_t c) {  // ">"
+    float m = y + h / 2.0f, r = x + h / 2.0f + 3;
+    gfx_triangle(r, m, x + 2, y, x, y + 1.5f, c);
+    gfx_triangle(r - 1.2f, m - 1.2f, x, y + 1.5f, r - 2.5f, m, c);
+    gfx_triangle(r, m, x, y + h - 1.5f, x + 2, y + h, c);
+    gfx_triangle(r - 2.5f, m, x, y + h - 1.5f, r - 1.2f, m + 1.2f, c);
+}
+
+// Battery icon with its right edge at xr; returns the x where it starts.
+static int draw_battery(int xr, int y) {
+    if (cur.battery < 0) return xr;
+    int w = 20, h = 10, x = xr - w - 2;
+    bool low = cur.battery < 15 && !cur.charging;
+    rgb_t fill = cur.charging ? CHARGE_GREEN : low ? LOW_RED : WHITE;
+    gfx_fill_rect(x, y, w, h, WHITE);                       // outline
+    gfx_fill_rect(x + 1, y + 1, w - 2, h - 2, (rgb_t){0, 0, 0});
+    int lvl = (w - 4) * cur.battery / 100;
+    if (lvl < 1 && cur.battery > 0) lvl = 1;
+    gfx_fill_rect(x + 2, y + 2, lvl, h - 4, fill);
+    gfx_fill_rect(x + w, y + 3, 2, h - 6, WHITE);           // terminal nub
+    char pct[8]; snprintf(pct, sizeof pct, "%d%%", cur.battery);
+    int tw = gfx_text_width(&pod_font_status, pct);
+    gfx_text(&pod_font_status, x - 4, y - 2, pct, WHITE, 2);
+    return x - 4 - tw;
+}
+
+static void draw_status_bar(const char *left, bool chevron) {
+    int x = 10;
+    if (chevron) { draw_chevron_left(8, 6, 11, WHITE); x = 22; }
+    gfx_text(&pod_font_status, x, 5, left, WHITE, 0);
+    int xr = draw_battery(GFX_W - 8, 6);
+    if (cur.screen == SCREEN_NOW && cur.volume >= 0) {
+        char v[16]; snprintf(v, sizeof v, "Vol %d%%", cur.volume);
+        gfx_text(&pod_font_status, xr - (cur.battery >= 0 ? 10 : 2), 5, v, WHITE, 2);
+    }
+}
+
 static void draw_skip(float cx, float cy, float sz, rgb_t c, bool fwd) {
     float s = fwd ? 1.f : -1.f;
     for (int k = 0; k < 2; k++) {
@@ -199,7 +283,10 @@ static void draw_play_glyph(float cx, float cy, float sz, rgb_t c, bool paused_i
 
 static void fmt_time(char *o, size_t n, uint32_t s, bool neg) { snprintf(o, n, "%s%lu:%02lu", neg ? "-" : "", (unsigned long)(s / 60), (unsigned long)(s % 60)); }
 
+
 static uint32_t shown_pos_s = 0xFFFFFFFF;
+static int hl_zone = POD_CMD_NONE;           // skip button being held (seeking)
+static int64_t seek_preview_ms = -1;         // SD mode: position under the finger while dragging
 
 static uint32_t current_pos_ms(void) {
     uint64_t p = cur.pos_ms;
@@ -208,17 +295,16 @@ static uint32_t current_pos_ms(void) {
     return (uint32_t)p;
 }
 
-static int hl_zone = POD_CMD_NONE;           // skip button being held (seeking)
-
 static void draw_controls(void) {
     gfx_fill_rect(0, CTRL_Y, GFX_W, GFX_H - CTRL_Y, base);
     rgb_t track = gfx_mix(base, WHITE, 80);
     gfx_capsule(BAR_X0, BAR_X1, BAR_Y, 2.0f, track);
-    uint32_t pos = current_pos_ms();
+    uint32_t pos = seek_preview_ms >= 0 ? (uint32_t)seek_preview_ms : current_pos_ms();
     shown_pos_s = pos / 1000;
     if (cur.len_ms) {
         int xp = BAR_X0 + (int)((uint64_t)(BAR_X1 - BAR_X0) * pos / cur.len_ms);
-        if (xp > BAR_X0) gfx_capsule(BAR_X0, xp, BAR_Y, 2.0f, WHITE);
+        if (xp > BAR_X0) gfx_capsule(BAR_X0, xp, BAR_Y, seek_preview_ms >= 0 ? 3.0f : 2.0f, WHITE);
+        if (sd_mode) gfx_circle(xp, BAR_Y, seek_preview_ms >= 0 ? 7 : 4, WHITE);   // seekable: show a knob
         char a[12], b[12];
         fmt_time(a, sizeof a, pos / 1000, false);
         fmt_time(b, sizeof b, (cur.len_ms - pos + 999) / 1000, true);
@@ -244,7 +330,7 @@ static void draw_placeholder_art(void) {
     gfx_circle(116, 128, 15, n);
 }
 
-static void render_full(void) {
+static void render_now(void) {
     // 1. art (cover-cropped to a 240x240 square) or placeholder
     if (has_art) {
         int s = art_w < art_h ? art_w : art_h;
@@ -263,12 +349,8 @@ static void render_full(void) {
     // 4. top scrim for the status bar
     for (int y = 0; y < SCRIM_H; y++)
         for (int x = 0; x < GFX_W; x++) gfx_blend_px(x, y, (rgb_t){0, 0, 0}, 128 * (SCRIM_H - y) / SCRIM_H);
-    // 5. status bar
-    gfx_text(&pod_font_status, 10, 5, cur.status[0] ? cur.status : "Pod", WHITE, 0);
-    if (cur.volume >= 0) {
-        char v[16]; snprintf(v, sizeof v, "Vol %d%%", cur.volume);
-        gfx_text(&pod_font_status, GFX_W - 10, 5, v, WHITE, 2);
-    }
+    // 5. status bar (in SD mode the left side is a "< Library" button)
+    draw_status_bar(cur.status[0] ? cur.status : "Pod", sd_mode);
     // 6. title + artist, centred with ellipsis
     char buf[TXT_LEN + 4];
     gfx_fit(&pod_font_title, cur.title[0] ? cur.title : "Not playing", TEXT_MAX_W, buf, sizeof buf);
@@ -277,6 +359,84 @@ static void render_full(void) {
     gfx_text(&pod_font_body, 120, ARTIST_Y, buf, gfx_mix(WHITE, base, 28), 1);
     // 7. progress + transport
     draw_controls();
+}
+
+// ============================================================ library list
+static int list_scroll;                       // pixels scrolled down
+static int list_pressed = -1;                 // row under the finger
+
+static int list_max_scroll(void) {
+    int m = list_n * ROW_H - (GFX_H - LIST_HDR_H);
+    return m > 0 ? m : 0;
+}
+
+static void draw_folder_icon(int x, int y, rgb_t c) {
+    gfx_fill_rect(x, y + 2, 8, 3, c);
+    round_rect(x, y + 4, 18, 13, 2, c);
+}
+
+static void draw_note_icon(int x, int y, rgb_t c) {
+    gfx_fill_rect(x + 9, y, 2, 13, c);
+    gfx_triangle(x + 11, y, x + 11, y + 5, x + 17, y + 6, c);
+    gfx_circle(x + 7, y + 13, 4, c);
+}
+
+static void render_list(void) {
+    mutex_enter_blocking(&list_lock);
+    if (list_scroll > list_max_scroll()) list_scroll = list_max_scroll();
+    if (list_scroll < 0) list_scroll = 0;
+    gfx_fill_rect(0, LIST_HDR_H, GFX_W, GFX_H - LIST_HDR_H, IDLE_BASE);
+    rgb_t dim = {150, 150, 160}, line = {52, 52, 60};
+    int first = list_scroll / ROW_H;
+    for (int i = first; i < list_n; i++) {
+        int y = LIST_HDR_H + i * ROW_H - list_scroll;
+        if (y >= GFX_H) break;
+        if (i == list_pressed || i == cur.list_highlight)
+            gfx_fill_rect(0, y, GFX_W, ROW_H, i == list_pressed ? (rgb_t){70, 70, 82} : (rgb_t){48, 48, 58});
+        if (list_folder[i]) draw_folder_icon(14, y + 11, dim);
+        else draw_note_icon(14, y + 11, i == cur.list_highlight ? WHITE : dim);
+        char buf[TXT_LEN + 4];
+        gfx_fit(&pod_font_body, list_pool + list_off[i], 180, buf, sizeof buf);
+        gfx_text(&pod_font_body, 44, y + 12, buf, WHITE, 0);
+        if (list_folder[i]) draw_chevron_right(GFX_W - 20, y + 15, 10, dim);
+        gfx_fill_rect(44, y + ROW_H - 1, GFX_W - 44, 1, line);
+    }
+    if (list_n == 0) {
+        gfx_text(&pod_font_body, 120, 140, "No music here", dim, 1);
+        gfx_text(&pod_font_small, 120, 162, "Copy MP3 or WAV files to the card", dim, 1);
+    }
+    // header drawn last so rows scroll underneath it
+    gfx_fill_rect(0, 0, GFX_W, LIST_HDR_H, (rgb_t){26, 26, 31});
+    gfx_fill_rect(0, LIST_HDR_H - 1, GFX_W, 1, line);
+    char t[80];
+    gfx_fit(&pod_font_title, list_title, list_can_back ? 150 : 200, t, sizeof t);
+    gfx_text(&pod_font_title, 120, 13, t, WHITE, 1);
+    if (list_can_back) draw_chevron_left(10, 15, 14, WHITE);
+    if (cur.title[0]) {                       // something is loaded: shortcut back to it
+        draw_play_glyph(GFX_W - 20, 22, 11, WHITE, false);
+    } else {
+        draw_battery(GFX_W - 8, 4);
+    }
+    mutex_exit(&list_lock);
+}
+
+// ================================================================== toast
+static uint32_t toast_until_ms;
+#define TOAST_Y 30
+#define TOAST_H 28
+
+static void draw_toast(void) {
+    int w = gfx_text_width(&pod_font_body, cur.toast) + 28;
+    if (w > GFX_W - 16) w = GFX_W - 16;
+    int x = (GFX_W - w) / 2;
+    round_rect(x, TOAST_Y, w, TOAST_H, 13, (rgb_t){20, 20, 24});
+    round_rect(x + 1, TOAST_Y + 1, w - 2, TOAST_H - 2, 12, (rgb_t){58, 58, 66});
+    gfx_text(&pod_font_body, GFX_W / 2, TOAST_Y + 7, cur.toast, WHITE, 1);
+}
+
+static void render_screen(void) {
+    if (cur.screen == SCREEN_LIST) render_list(); else render_now();
+    if (toast_until_ms) draw_toast();
 }
 
 // ============================================================ JPEG decode
@@ -369,19 +529,24 @@ static void ov_draw(void) {
     gfx_circle(xp, OV_BAR_Y, 8, WHITE);
 }
 
+static void redraw_all(void) {
+    render_screen();
+    if (ov_visible && cur.screen == SCREEN_NOW) { ov_capture(); ov_draw(); }
+    blit_all();
+}
+
 static void ov_show(void) {
-    render_full();
-    ov_capture();
-    ov_vol = cur.volume >= 0 ? cur.volume : 50;
     ov_visible = true;
+    ov_vol = cur.volume >= 0 ? cur.volume : 50;
+    render_screen();
+    ov_capture();
     ov_draw();
     blit_all();
 }
 
 static void ov_hide(void) {
     ov_visible = false;
-    render_full();                               // also refreshes "Vol NN%" in the status bar
-    blit_all();
+    redraw_all();                                // also refreshes "Vol NN%" in the status bar
 }
 
 static int ov_vol_from_x(int x) {
@@ -390,8 +555,9 @@ static int ov_vol_from_x(int x) {
 }
 
 // ================================================================ core 1
-enum { K_NONE = 0, K_ZONE, K_ART, K_VOL_DRAG };
+enum { K_NONE = 0, K_ZONE, K_ART, K_VOL_DRAG, K_SEEK, K_STATUS, K_LIST, K_LIST_BACK, K_LIST_NOW };
 #define HOLD_MS 450                              // press-and-hold on skip = fast-forward / rewind
+#define TAP_SLOP 10                              // pixels a tap may wander before it becomes a scroll
 
 static int zone_at(int x, int y) {
     if (y < BTN_Y - 26) return POD_CMD_NONE;
@@ -400,12 +566,19 @@ static int zone_at(int x, int y) {
     return POD_CMD_NEXT;
 }
 
+static int64_t seek_ms_from_x(int x) {
+    if (x < BAR_X0) x = BAR_X0;
+    if (x > BAR_X1) x = BAR_X1;
+    return (int64_t)cur.len_ms * (x - BAR_X0) / (BAR_X1 - BAR_X0);
+}
+
 static void core1_main(void) {
     flash_safe_execute_core_init();          // core 0 may write BT pairing keys to flash
     uint32_t last_touch_ms = 0;
-    bool down = false, seeking = false;
+    bool down = false, seeking = false, moved = false;
     int kind = K_NONE, zone = POD_CMD_NONE;
     uint32_t press_ms = 0;
+    int press_x = 0, press_y = 0, scroll_at_press = 0;
 
     while (true) {
         uint32_t dirty = 0;
@@ -418,36 +591,46 @@ static void core1_main(void) {
             if (dirty & D_ART) { art_len = mbox.art_len; memcpy(jpeg_work, mbox_art, art_len); }
         }
         mutex_exit(&mbox_lock);
+        uint32_t now = to_ms_since_boot(get_absolute_time());
 
         if (dirty & D_ART_CLEAR) { has_art = false; base = IDLE_BASE; }
         if (dirty & D_ART) {
             has_art = decode_art(art_len);
             if (!has_art) base = IDLE_BASE;
         }
-        if (dirty & (D_ART | D_ART_CLEAR | D_TEXT | D_STATUS)) {
+        if (dirty & D_TOAST) toast_until_ms = now + 4000;
+        if (dirty & D_SCREEN) {
+            if (cur.screen != SCREEN_NOW) ov_visible = false;
+            if (cur.screen == SCREEN_LIST && cur.list_highlight >= 0) {      // bring the playing row into view
+                int y = cur.list_highlight * ROW_H;
+                if (y < list_scroll || y + ROW_H > list_scroll + GFX_H - LIST_HDR_H)
+                    list_scroll = y - (GFX_H - LIST_HDR_H) / 2;
+            }
+        }
+        if (dirty & D_LIST) list_scroll = 0;
+
+        bool full = dirty & (D_ART | D_ART_CLEAR | D_TEXT | D_STATUS | D_BATT | D_TOAST | D_SCREEN | D_LIST);
+        if (full) {
             absolute_time_t t0 = get_absolute_time();
-            render_full();
-            if (ov_visible) { ov_capture(); ov_draw(); }
-            blit_all();
+            redraw_all();
             if (dirty & D_ART) printf("Pod: frame rendered in %lld ms\n", absolute_time_diff_us(t0, get_absolute_time()) / 1000);
         } else if (dirty & D_VOL) {
-            if (ov_visible) {
-                if (kind != K_VOL_DRAG && cur.volume >= 0) { ov_vol = cur.volume; ov_draw(); blit_rows(OV_Y0, OV_H); }
-            } else {
-                render_full();
-                blit_all();
+            if (cur.screen == SCREEN_NOW) {
+                if (ov_visible) {
+                    if (kind != K_VOL_DRAG && cur.volume >= 0) { ov_vol = cur.volume; ov_draw(); blit_rows(OV_Y0, OV_H); }
+                } else {
+                    redraw_all();
+                }
             }
+        } else if (cur.screen == SCREEN_NOW && kind != K_SEEK &&
+                   (dirty & (D_PLAY | D_PROGRESS) ||
+                    (cur.playing && cur.len_ms && current_pos_ms() / 1000 != shown_pos_s))) {
+            draw_controls();                      // tick the progress bar once a second
+            blit_rows(CTRL_Y, GFX_H - CTRL_Y);
         }
-        if (!(dirty & (D_ART | D_ART_CLEAR | D_TEXT | D_STATUS))) {
-            if (dirty & (D_PLAY | D_PROGRESS) ||
-                (cur.playing && cur.len_ms && current_pos_ms() / 1000 != shown_pos_s)) {
-                draw_controls();                  // tick the progress bar once a second
-                blit_rows(CTRL_Y, GFX_H - CTRL_Y);
-            }
-        }
+        if (toast_until_ms && (int32_t)(now - toast_until_ms) >= 0) { toast_until_ms = 0; redraw_all(); }
 
         // ---- touch
-        uint32_t now = to_ms_since_boot(get_absolute_time());
         if (now - last_touch_ms >= 20) {
             last_touch_ms = now;
             xpt2046_raw_t r;
@@ -459,13 +642,27 @@ static void core1_main(void) {
             else if (!irq) down = false;          // irq on but too light to read: keep previous state
 
             if (down && !was_down && got) {       // ---- finger lands
-                press_ms = now;
-                seeking = false;
-                if (ov_visible && sy >= OV_Y0 && sy < OV_Y0 + OV_H) {
+                press_ms = now; press_x = sx; press_y = sy;
+                seeking = false; moved = false;
+                if (cur.screen == SCREEN_LIST) {
+                    if (sy < LIST_HDR_H) {
+                        kind = (sx < 70 && list_can_back) ? K_LIST_BACK : (sx > GFX_W - 50 && cur.title[0]) ? K_LIST_NOW : K_NONE;
+                    } else {
+                        kind = K_LIST;
+                        scroll_at_press = list_scroll;
+                        list_pressed = (sy - LIST_HDR_H + list_scroll) / ROW_H;
+                        if (list_pressed >= list_n) list_pressed = -1;
+                        else redraw_all();
+                    }
+                } else if (ov_visible && sy >= OV_Y0 && sy < OV_Y0 + OV_H) {
                     kind = K_VOL_DRAG;
+                } else if (sy < SCRIM_H + 6 && sx < STATUS_TAP_W) {
+                    kind = K_STATUS;
+                } else if (sd_mode && cur.len_ms && sy >= BAR_Y - 14 && sy <= TIME_Y + 14) {
+                    kind = K_SEEK;
                 } else if (sy >= BTN_Y - 26) {
                     kind = K_ZONE; zone = zone_at(sx, sy);
-                } else if (sy >= SCRIM_H && sy < TITLE_Y - 8) {
+                } else if (sy >= SCRIM_H + 6 && sy < TITLE_Y - 8) {
                     kind = K_ART;
                 } else {
                     kind = K_NONE;
@@ -473,6 +670,7 @@ static void core1_main(void) {
             }
 
             if (down && got) {                    // ---- finger held / moving
+                if (abs(sx - press_x) > TAP_SLOP || abs(sy - press_y) > TAP_SLOP) moved = true;
                 if (kind == K_VOL_DRAG) {
                     int v = ov_vol_from_x(sx);
                     if (v != ov_vol) {
@@ -481,6 +679,18 @@ static void core1_main(void) {
                         ov_draw(); blit_rows(OV_Y0, OV_H);
                     }
                     ov_last_ms = now;
+                } else if (kind == K_SEEK) {
+                    seek_preview_ms = seek_ms_from_x(sx);
+                    draw_controls();
+                    blit_rows(CTRL_Y, GFX_H - CTRL_Y);
+                } else if (kind == K_LIST && moved) {
+                    int ns = scroll_at_press - (sy - press_y);
+                    if (ns < 0) ns = 0;
+                    if (ns > list_max_scroll()) ns = list_max_scroll();
+                    if (ns != list_scroll || list_pressed >= 0) {
+                        list_scroll = ns; list_pressed = -1;
+                        render_list(); blit_rows(LIST_HDR_H, GFX_H - LIST_HDR_H);
+                    }
                 } else if (kind == K_ZONE && !seeking && now - press_ms >= HOLD_MS &&
                            (zone == POD_CMD_PREV || zone == POD_CMD_NEXT) && zone_at(sx, sy) == zone) {
                     seeking = true;
@@ -507,8 +717,27 @@ static void core1_main(void) {
                             blit_rows(CTRL_Y, GFX_H - CTRL_Y);
                         }
                     }
+                } else if (kind == K_SEEK) {
+                    if (seek_preview_ms >= 0 && cur.len_ms) {
+                        mbox_seek_req = (int)(seek_preview_ms * 1000 / cur.len_ms);
+                        push_cmd(POD_CMD_SEEK);
+                        cur.pos_ms = (uint32_t)seek_preview_ms; cur.pos_stamp_us = time_us_64();
+                    }
+                    seek_preview_ms = -1;
+                    draw_controls();
+                    blit_rows(CTRL_Y, GFX_H - CTRL_Y);
                 } else if (kind == K_ART) {
                     if (ov_visible) ov_hide(); else { ov_show(); ov_last_ms = now; }
+                } else if (kind == K_STATUS) {
+                    push_cmd(sd_mode ? POD_CMD_BACK : POD_CMD_HOME);
+                } else if (kind == K_LIST) {
+                    if (!moved && list_pressed >= 0) { mbox_list_req = list_pressed; push_cmd(POD_CMD_LIST_SELECT); }
+                    list_pressed = -1;
+                    redraw_all();
+                } else if (kind == K_LIST_BACK) {
+                    push_cmd(POD_CMD_BACK);
+                } else if (kind == K_LIST_NOW) {
+                    push_cmd(POD_CMD_NOW_PLAYING);
                 }
                 kind = K_NONE;
                 seeking = false;
@@ -519,9 +748,65 @@ static void core1_main(void) {
     }
 }
 
+// ============================================================== home screen
+// Runs on core 0 before core 1 starts, so it can draw and read touch directly.
+static void draw_phone_icon(int cx, int cy, rgb_t c, rgb_t bg) {
+    round_rect(cx - 9, cy - 15, 18, 30, 4, c);
+    gfx_fill_rect(cx - 7, cy - 11, 14, 21, bg);
+    gfx_fill_rect(cx - 3, cy + 11, 6, 2, bg);
+}
+
+static void draw_sd_icon(int cx, int cy, rgb_t c, rgb_t bg) {
+    round_rect(cx - 11, cy - 14, 22, 28, 3, c);
+    gfx_triangle(cx + 4, cy - 15, cx + 12, cy - 15, cx + 12, cy - 7, bg);      // clipped corner
+    for (int i = 0; i < 4; i++) gfx_fill_rect(cx - 7 + i * 4, cy - 10, 2, 6, bg); // contacts
+}
+
+static void render_home(int pressed) {
+    for (int y = 0; y < GFX_H; y++) gfx_hline_dither(y, gfx_mix((rgb_t){46, 46, 56}, (rgb_t){22, 22, 27}, y * 256 / GFX_H));
+    draw_battery(GFX_W - 8, 6);
+    gfx_text(&pod_font_title, 120, 46, "Pod", WHITE, 1);
+    gfx_text(&pod_font_body, 120, 72, "What would you like to play?", (rgb_t){170, 170, 180}, 1);
+    const char *t[2] = { "Phone", "SD card" };
+    const char *st[2] = { "Stream from your iPhone", "Music saved on the card" };
+    for (int i = 0; i < 2; i++) {
+        int y = 104 + i * 104;
+        rgb_t card = pressed == i ? (rgb_t){78, 78, 92} : (rgb_t){52, 52, 62};
+        round_rect(16, y, GFX_W - 32, 90, 14, card);
+        rgb_t accent = i == 0 ? (rgb_t){249, 115, 98} : (rgb_t){110, 170, 250};
+        gfx_circle(58, y + 45, 24, accent);
+        if (i == 0) draw_phone_icon(58, y + 45, WHITE, accent); else draw_sd_icon(58, y + 45, WHITE, accent);
+        gfx_text(&pod_font_title, 96, y + 26, t[i], WHITE, 0);
+        gfx_text(&pod_font_small, 96, y + 52, st[i], (rgb_t){185, 185, 195}, 0);
+    }
+    gfx_text(&pod_font_small, 120, GFX_H - 16, "Tap the top-left corner to come back here", (rgb_t){120, 120, 132}, 1);
+}
+
+pod_source_t pod_display_home(void) {
+    cur.battery = mbox.battery;
+    cur.charging = mbox.charging;
+    render_home(-1);
+    blit_all();
+    int pressed = -1;
+    while (true) {
+        xpt2046_raw_t r;
+        int sx, sy;
+        if (xpt2046_irq_active() && xpt2046_read(&r) && map_touch(&r, &sx, &sy)) {
+            int p = (sx >= 16 && sx < GFX_W - 16) ? (sy >= 104 && sy < 194 ? 0 : sy >= 208 && sy < 298 ? 1 : -1) : -1;
+            if (p != pressed) { pressed = p; render_home(pressed); blit_all(); }
+        } else if (!xpt2046_irq_active() && pressed >= 0) {
+            pod_source_t src = pressed == 0 ? POD_SOURCE_PHONE : POD_SOURCE_SD;
+            printf("Pod: home -> %s\n", src == POD_SOURCE_PHONE ? "Phone" : "SD card");
+            return src;
+        }
+        sleep_ms(15);
+    }
+}
+
 // ============================================================== core 0 API
 void pod_display_boot(void) {
     mutex_init(&mbox_lock);
+    mutex_init(&list_lock);
     ili9341_init();
     xpt2046_init();
     bool have = cal_load();
@@ -534,15 +819,30 @@ void pod_display_boot(void) {
         printf("Pod: touch calibration loaded (hold the screen while powering up to redo it)\n");
     }
     mbox.volume = -1;
+    mbox.battery = -1;
+    mbox.list_highlight = -1;
+    mbox.screen = SCREEN_NOW;
     strcpy(mbox.status, "Pod");
     strcpy(mbox.title, "Waiting for phone");
     strcpy(mbox.artist, "Pair \xE2\x80\x9CPod\xE2\x80\x9D in Bluetooth settings");
     memcpy(&cur, &mbox, sizeof cur);
-    render_full();
-    blit_all();
 }
 
-void pod_display_start(void) { multicore_launch_core1(core1_main); }
+void pod_display_set_sd_mode(bool on) {
+    sd_mode = on;
+    if (on) {
+        strcpy(mbox.status, "Library");
+        strcpy(mbox.title, "SD card");
+        strcpy(mbox.artist, "Reading your music\xE2\x80\xA6");
+    }
+}
+
+void pod_display_start(void) {
+    memcpy(&cur, &mbox, sizeof cur);
+    render_screen();
+    blit_all();
+    multicore_launch_core1(core1_main);
+}
 
 #define SET(flag, body) do { mutex_enter_blocking(&mbox_lock); body; mbox_dirty |= (flag); mutex_exit(&mbox_lock); } while (0)
 
@@ -592,6 +892,103 @@ void pod_display_set_art(const uint8_t *jpeg, size_t len) {
     SET(D_ART, { memcpy(mbox_art, jpeg, len); mbox.art_len = len; });
 }
 
+uint8_t *pod_display_art_begin(size_t *cap) {
+    mutex_enter_blocking(&mbox_lock);
+    *cap = POD_ART_MAX_BYTES;
+    return mbox_art;
+}
+
+void pod_display_art_commit(size_t len) {
+    if (len > 0 && len <= POD_ART_MAX_BYTES) {
+        mbox.art_len = len;
+        mbox_dirty = (mbox_dirty & ~(uint32_t)D_ART_CLEAR) | D_ART;
+    } else {
+        mbox_dirty = (mbox_dirty & ~(uint32_t)D_ART) | D_ART_CLEAR;
+    }
+    mutex_exit(&mbox_lock);
+}
+
+void pod_display_set_battery(int pct, bool charging) {
+    mutex_enter_blocking(&mbox_lock);
+    if (mbox.battery != pct || mbox.charging != charging) {
+        mbox.battery = pct; mbox.charging = charging;
+        mbox_dirty |= D_BATT;
+    }
+    mutex_exit(&mbox_lock);
+}
+
+void pod_display_toast(const char *s) {
+    SET(D_TOAST, { strncpy(mbox.toast, s, sizeof mbox.toast - 1); mbox.toast[sizeof mbox.toast - 1] = 0; });
+}
+
+// ---- library list
+void pod_display_list_begin(const char *title, bool can_go_back) {
+    mutex_enter_blocking(&list_lock);
+    list_n = 0; list_used = 0;
+    strncpy(list_title, title, sizeof list_title - 1);
+    list_title[sizeof list_title - 1] = 0;
+    list_can_back = can_go_back;
+    mutex_exit(&list_lock);
+}
+
+bool pod_display_list_add(const char *name, bool is_folder) {
+    size_t n = strlen(name) + 1;
+    mutex_enter_blocking(&list_lock);
+    bool ok = list_n < POD_LIST_MAX && list_used + n <= POD_LIST_POOL;
+    if (ok) {
+        memcpy(list_pool + list_used, name, n);
+        list_off[list_n] = (uint16_t)list_used;
+        list_folder[list_n] = is_folder;
+        list_used += (int)n;
+        list_n++;
+    }
+    mutex_exit(&list_lock);
+    return ok;
+}
+
+void pod_display_list_sort(void) {
+    mutex_enter_blocking(&list_lock);
+    for (int i = 1; i < list_n; i++) {          // insertion sort: lists are small and mostly in order
+        uint16_t off = list_off[i];
+        uint8_t fol = list_folder[i];
+        int j = i - 1;
+        while (j >= 0 && (list_folder[j] < fol ||
+               (list_folder[j] == fol && strcasecmp(list_pool + list_off[j], list_pool + off) > 0))) {
+            list_off[j + 1] = list_off[j];
+            list_folder[j + 1] = list_folder[j];
+            j--;
+        }
+        list_off[j + 1] = off;
+        list_folder[j + 1] = fol;
+    }
+    mutex_exit(&list_lock);
+}
+
+void pod_display_list_end(int highlight) {
+    SET(D_LIST | D_SCREEN, { mbox.screen = SCREEN_LIST; mbox.list_highlight = highlight; });
+}
+
+int pod_display_list_count(void) { return list_n; }
+
+bool pod_display_list_get(int i, char *out, size_t cap, bool *is_folder) {
+    mutex_enter_blocking(&list_lock);
+    bool ok = i >= 0 && i < list_n;
+    if (ok) {
+        strncpy(out, list_pool + list_off[i], cap - 1);
+        out[cap - 1] = 0;
+        if (is_folder) *is_folder = list_folder[i];
+    }
+    mutex_exit(&list_lock);
+    return ok;
+}
+
+void pod_display_show_list(int highlight) {
+    SET(D_SCREEN, { mbox.screen = SCREEN_LIST; mbox.list_highlight = highlight; });
+}
+
+void pod_display_show_now_playing(void) { SET(D_SCREEN, { mbox.screen = SCREEN_NOW; }); }
+
+// ---- input
 pod_cmd_t pod_display_take_command(void) {
     uint32_t r = cmdq_r;
     if (r == cmdq_w) return POD_CMD_NONE;
@@ -609,3 +1006,6 @@ int pod_display_take_volume(void) {
     applied_seq = seq;
     return mbox_vol_req;
 }
+
+int pod_display_take_seek(void) { return mbox_seek_req; }
+int pod_display_take_list_index(void) { return mbox_list_req; }

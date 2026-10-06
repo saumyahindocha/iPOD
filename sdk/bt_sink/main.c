@@ -8,6 +8,8 @@
 #include "pico/cyw43_arch.h"
 #include "btstack.h"
 #include "pod_display.h"
+#include "pod_battery.h"
+#include "sd_player.h"
 
 #if USING_IPERF
 #include "lwip/apps/lwiperf.h"
@@ -47,8 +49,15 @@ int main() {
     stdio_init_all();
 
     // Pod patch: bring up display + touch (first-boot calibration happens here),
-    // then hand the screen to core 1 before the radio and Bluetooth start
+    // ask "Phone or SD card?", then hand the screen to core 1.
     pod_display_boot();
+    pod_battery_init();
+    pod_source_t source = pod_display_home();
+    if (source == POD_SOURCE_SD) {
+        pod_display_set_sd_mode(true);
+        pod_display_start();
+        sd_player_main();                       // never returns
+    }
     pod_display_start();
 
 

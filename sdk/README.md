@@ -9,7 +9,7 @@ on real hardware yet**. Your breadboard is the first test.
 |---|---|
 | `pod_display_test.uf2` | Screen + touch only: colours, geometry, touch calibration, paint |
 | `pod_dac_test.uf2` | DAC only: quiet 440 Hz tone, LEFT → RIGHT → BOTH → silence |
-| `pod_bt_sink.uf2` | The real thing: iPhone → Bluetooth → DAC, with the **Option C "Poster"** Now Playing screen (album art, title, artist, live progress bar, touch play/pause/prev/next) |
+| `pod.uf2` | **The main firmware.** Home screen → **Phone** (iPhone → Bluetooth → DAC with album art) or **SD card** (MP3/WAV player with library browser). Poster Now Playing screen, volume slider, seeking, battery icon |
 
 ---
 
@@ -55,10 +55,17 @@ doesn't release the line and would corrupt touch readings on a shared bus.
 Listening: DAC jack → powered speaker / AUX input (line level). Earbuds work at
 low volume but aren't representative.
 
-### Later: SD slot on the display module (shares SPI0)
-SD_SCK → GP18, SD_MOSI → GP19, SD_MISO → GP20, SD_CS → GP7 (10).
+### SD card slot (on the back of the display module, shares SPI0)
+| SD pin (4-pin header next to the card slot) | Pico 2 W |
+|---|---|
+| SD_CS | GP7 (10) |
+| SD_SCK | GP18 (24), same row as SCK / T_CLK |
+| SD_MOSI | GP19 (25), same row as SDI / T_DIN |
+| SD_MISO | GP20 (26), same row as T_DO |
 
----
+### Battery fuel gauge (optional now, built into the PCB later)
+A MAX17048 breakout (SparkFun / Adafruit) with a 1-cell LiPo: SDA → GP4 (6), SCL → GP5 (7),
+3V3, GND, and the cell on its battery connector. Without it, the battery icon stays hidden.
 
 ## 2. Before powering up (5 minutes, prevents most problems)
 1. **Unplug USB.** Multimeter on resistance/continuity: 3V3 (36) to GND must NOT
@@ -96,10 +103,11 @@ A quiet tone plays: left ear, right ear, both, silence, repeating.
 - Left and right swapped: BCK and WSEL are swapped.
 - Silence: check DIN/BCK/WSEL and VIN.
 
-### Step 3: Bluetooth + Poster UI → `pod_bt_sink.uf2`
+### Step 3: Bluetooth + Poster UI → `pod.uf2`, choose **Phone**
 1. **First boot runs touch setup:** tap the 4 dots. The calibration is saved to
    flash. To redo it later, **hold a finger on the screen while plugging in USB**.
-2. The idle screen reads **"Waiting for phone"**.
+2. The **home screen** asks Phone or SD card: tap **Phone**. The idle screen reads **"Waiting for phone"**.
+   Tapping **Pod** (top-left) at any time goes back to the home screen.
 3. On the iPhone, go to Settings → Bluetooth and tap **"Pod xx:xx:…"**. If you
    paired an earlier Pod build, first open it there and choose **"Forget This
    Device"**, because iOS caches the old feature list.
@@ -117,6 +125,29 @@ A quiet tone plays: left ear, right ear, both, silence, repeating.
    and the iPhone's volume slider follows. It closes by itself after 3 s.
 
 ---
+
+### Step 4: SD card player → `pod.uf2`, choose **SD card**
+**Card:** FAT32 or exFAT, any size. Copy MP3 (CBR or VBR) or WAV (16/24-bit) files; folders are fine.
+For cover art, embed a **baseline JPEG up to 32 KB** (about 300–500 px) in the MP3, or put
+`cover.jpg` / `folder.jpg` in the album folder. Progressive JPEGs and PNGs show the placeholder.
+
+1. Tap **SD card** on the home screen. The library lists folders first, then songs, A–Z.
+   Drag to scroll, tap a folder to open it, **<** (top-left) to go up; at the top level it goes home.
+2. Tap a song: it plays and the Poster screen shows its title, artist and cover.
+   Serial: `Pod: SD card ready`, `Pod: playing /…/song.mp3 (MP3 44100 Hz, … ms)`.
+3. **Drag the knob on the progress bar** to jump anywhere in the song.
+4. **Hold ⏭ / ⏮** to scrub 5 s at a time; tap to skip. ⏮ restarts the song if more than 3 s in.
+5. Tap the art for the volume slider. **< Library** (top-left) goes back to the list;
+   the ▶ in the list header returns to the song.
+6. At the end of a song the next one in the folder plays; at the end of the folder it stops.
+
+Troubleshooting: "No SD card" → check SD_CS (GP7) and the three shared wires; "Card isn't FAT32 /
+exFAT" → reformat; crackles while the screen redraws → report it (the display releases the bus every
+24 rows, so this shouldn't happen).
+
+### Battery icon and low-battery warning
+With the gauge fitted, the status bar shows the percentage and a battery icon (green while
+charging). Below **15 %** a "Battery low" message pops up once; it re-arms after charging.
 
 ## 4. Robustness tests (do all of these before the PCB)
 | Test | Expected |
@@ -146,7 +177,14 @@ Write these numbers down; they are the inputs to the PCB design phase.
 
 ---
 
-## What's in the Bluetooth firmware (vs. upstream `a2dp_sink_demo`)
+## What's in the firmware
+
+**SD mode** (`sd_player/`): FatFs (read-only, FAT32 + exFAT) over a small SPI SD driver; minimp3 for MP3,
+WAV 16/24-bit; ID3v2.2–2.4 + ID3v1 + WAV INFO tags; Xing/VBRI headers for exact duration and VBR
+seeking. `tools/test_track_meta.c` tests this on a PC against real files; `tools/preview/` renders the
+screens on a PC.
+
+**Phone mode** (vs. upstream `a2dp_sink_demo`)
 All changes are marked `Pod patch`.
 1. **Software volume.** Upstream ignores volume, which makes the iPhone slider do nothing at full scale.
 2. **Sample-rate change handling** (44.1/48 kHz) so audio never plays at the wrong pitch.

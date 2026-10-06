@@ -39,3 +39,12 @@
 #define POD_TFT_SCK_PIN   POD_SPI_SCK_PIN
 #define POD_TFT_MOSI_PIN  POD_SPI_MOSI_PIN
 #define POD_TOUCH_SPI     POD_SPI
+
+// ---- Battery fuel gauge (MAX17048 on I2C0). Optional: if it doesn't answer,
+// the battery icon is simply hidden (as on the breadboard today).
+#define POD_I2C               i2c0
+#define POD_I2C_SDA_PIN        4   // Pico pin 6
+#define POD_I2C_SCL_PIN        5   // Pico pin 7
+// Charger "charging" status (e.g. BQ25180 /CHG, active low). -1 = not wired yet.
+#define POD_CHG_STAT_PIN      -1
+#define POD_LOW_BATTERY_PCT   15

@@ -10,7 +10,7 @@ A pocket-sized "modern iPod" built around the Raspberry Pi Pico 2 W. Pod receive
 
 - **Bluetooth A2DP sink (core requirement):** phone → Pico 2 W → DAC → headphones
 - **Now Playing screen** with full-bleed album art fading into an accent colour, and centred track text ("Poster" layout)
-- **Later:** microSD playback and a full LVGL touchscreen UI
+- **SD card playback** with a library browser, and a battery gauge with low-battery warning
 
 ## Hardware
 
@@ -19,7 +19,7 @@ A pocket-sized "modern iPod" built around the Raspberry Pi Pico 2 W. Pod receive
 | Raspberry Pi Pico 2 W | Main controller, Bluetooth Classic |
 | Adafruit PCM5102 I2S DAC | Audio output |
 | 2.8" 240×320 SPI touch display | UI and album art |
-| microSD slot (planned) | Local playback |
+| microSD slot (on the display module) | Local playback |
 
 The Pico 2 W replaced an earlier ESP32-S3 plan because the ESP32-S3 has no Bluetooth Classic, which A2DP needs.
 
@@ -55,18 +55,28 @@ Touch calibration (this board): both axes are reversed. Raw X ≈ 3540 at the le
 | WSEL (LRCK) | GP11 |
 | MCK, DE, FIL, MU, FM | not connected |
 
-### microSD (planned)
+### microSD (slot on the display module)
 
 SD_CS → GP7; shares GP18 (SCK), GP19 (MOSI) and GP20 (MISO) with the display bus.
+
+### Battery fuel gauge (optional on the breadboard)
+
+MAX17048: SDA → GP4, SCL → GP5.
 
 ## Firmware overview
 
 Pod has two firmware tracks:
 
-- **`sdk/` — the main firmware** (C, Raspberry Pi Pico SDK + BTstack). Bluetooth audio with **album art over AVRCP Cover Art**, the Poster Now Playing screen rendered on the second core, anti-aliased Inter text, progress bar, volume and touch controls. See [sdk/README.md](sdk/README.md) for its test plan.
+- **`sdk/` — the main firmware** (C, Raspberry Pi Pico SDK + BTstack). A home screen picks the source:
+  - **Phone:** Bluetooth audio from the iPhone with **album art over AVRCP Cover Art**, volume slider synced with the phone, press-and-hold seeking.
+  - **SD card:** MP3/WAV player with a touch library browser, tags and cover art, drag-to-seek, auto-advance through a folder.
+  - Poster Now Playing screen rendered on the second core, battery icon with low-battery warning.
+  See [sdk/README.md](sdk/README.md) for the test plan.
 - **`firmware/` — Arduino bring-up sketches** used to test each part of the hardware on its own (LED, DAC, Bluetooth, screen, touch).
 
 ![Poster UI preview](docs/ui_preview_poster.png)
+
+![Home, library, SD Now Playing, volume, low battery](docs/ui_screens_sd.png)
 
 ## Building the firmware
 
