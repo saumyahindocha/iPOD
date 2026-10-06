@@ -107,6 +107,10 @@ docs/       notes and datasheets
 PROGRESS.md dated build log
 ```
 
+## PCB, battery and enclosure
+
+The plan for the compact board (RP2350 + RM2 radio, 2.0" capacitive IPS screen, USB-C charging, LiPo with fuel gauge, 3D-printed case) is in [docs/pcb-plan.md](docs/pcb-plan.md).
+
 ## Progress
 
 See [PROGRESS.md](PROGRESS.md).
