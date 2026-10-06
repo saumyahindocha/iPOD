@@ -39,6 +39,12 @@ jobs:
           arduino-cli core update-index --additional-urls "$BOARD_URL"
           arduino-cli core install rp2040:rp2040 --additional-urls "$BOARD_URL"
 
+      - name: Install libraries listed in firmware/libraries.txt
+        run: |
+          grep -v '^\s*#' firmware/libraries.txt | sed '/^\s*$/d' | while read -r lib; do
+            arduino-cli lib install "$lib"
+          done
+
       - name: Compile every sketch in firmware/
         run: |
           mkdir -p uf2

@@ -59,7 +59,7 @@ SD_CS → GP7; shares GP18 (SCK), GP19 (MOSI) and GP20 (MISO) with the display b
 
 ## Building the firmware
 
-Sketches live in `firmware/<name>/<name>.ino`. Every push that touches `firmware/` triggers the **Build firmware** GitHub Action, which compiles each sketch for the Pico 2 W with `arduino-cli` and the [arduino-pico](https://github.com/earlephilhower/arduino-pico) core. A `sketch.yaml` in a sketch folder can set its own board options (e.g. Bluetooth on).
+Sketches live in `firmware/<name>/<name>.ino`. Every push that touches `firmware/` triggers the **Build firmware** GitHub Action, which compiles each sketch for the Pico 2 W with `arduino-cli` and the [arduino-pico](https://github.com/earlephilhower/arduino-pico) core. A `sketch.yaml` in a sketch folder can set its own board options (e.g. Bluetooth on), and `firmware/libraries.txt` lists the Arduino libraries the build installs.
 
 To flash: open the latest run under **Actions**, download the **pod-firmware** artifact, hold BOOTSEL while plugging in the Pico, and drag the `.uf2` onto the RP2350 drive.
 
@@ -68,6 +68,7 @@ To flash: open the latest run under **Actions**, download the **pod-firmware** a
 | `blink` | Blinks the onboard LED (build + flash check) |
 | `tone_test` | 440 Hz tone through the DAC (I2S wiring check) |
 | `bt_sink` | Bluetooth A2DP receiver named "Pod": phone → DAC → headphones |
+| `display_test` | Colour test, title screen and touch dots on the ILI9341 + XPT2046 |
 
 ## Repository layout
 
