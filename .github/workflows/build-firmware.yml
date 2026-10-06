@@ -1,0 +1,60 @@
+# Compiles every sketch in firmware/ for the Raspberry Pi Pico 2 W
+# and publishes the .uf2 files as a downloadable artifact.
+#
+# Runs on every push that changes firmware/ (or this file),
+# and can be started by hand from the Actions tab ("Run workflow").
+
+name: Build firmware
+
+on:
+  push:
+    paths:
+      - "firmware/**"
+      - ".github/workflows/build-firmware.yml"
+  workflow_dispatch:
+
+env:
+  # Earle Philhower's arduino-pico board package (supports the Pico 2 W)
+  BOARD_URL: https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+  FQBN: rp2040:rp2040:rpipico2w
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
+
+      - name: Reuse the board package from earlier runs
+        uses: actions/cache@v4
+        with:
+          path: ~/.arduino15
+          key: arduino15-${{ runner.os }}-v1
+
+      - name: Install the Pico board package
+        run: |
+          arduino-cli core update-index --additional-urls "$BOARD_URL"
+          arduino-cli core install rp2040:rp2040 --additional-urls "$BOARD_URL"
+
+      - name: Compile every sketch in firmware/
+        run: |
+          mkdir -p uf2
+          for dir in firmware/*/; do
+            name=$(basename "$dir")
+            [ -f "$dir/$name.ino" ] || continue
+            echo "::group::Compiling $name"
+            arduino-cli compile --fqbn "$FQBN" --additional-urls "$BOARD_URL" \
+              --output-dir "build/$name" "$dir"
+            cp "build/$name/$name.ino.uf2" "uf2/$name.uf2"
+            echo "::endgroup::"
+          done
+          ls -l uf2
+
+      - name: Publish the .uf2 files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pod-firmware
+          path: uf2/*.uf2
