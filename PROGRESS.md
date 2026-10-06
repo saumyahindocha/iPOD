@@ -15,13 +15,13 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 - Touch needed a hard press: the XPT2046_Touchscreen library has a fixed pressure cutoff of 300. Wrote `PodTouch`, our own driver with an adjustable threshold (set to 60 after testing), extra averaging and the calibration built in
 - `now_playing` works: Bluetooth audio, track info on screen and touch controls together (first combined firmware); only album art is missing
 - Recovered the full Poster firmware from an earlier design session (Pico SDK, C, with album art over AVRCP Cover Art) and added it as `sdk/`, with its own GitHub Actions build. Touch threshold lowered from 300 to 60 there too
+- Pod-side controls in `sdk/`: tap the album art for a volume slider (synced with the iPhone via AVRCP absolute volume), press-and-hold prev/next to rewind/fast-forward (built, awaiting hardware test)
 
 **Fixed**
 - Breadboard wiring didn't match the plan: T_DO was on GP21, RESET on GP20, MOSI on GP21 and display MISO connected. Moved to RESET → GP21, T_DO → GP20, MOSI → GP19, MISO disconnected (GP21 isn't a valid SPI0 data pin)
 - Local Arduino IDE compiles failed because the laptop's antivirus removed parts of the compiler toolchain; moved compiling to GitHub Actions
 
 **Next**
-- Pod-side controls in `sdk/`: tap the album art for a volume slider (synced with the iPhone via AVRCP absolute volume), press-and-hold prev/next to rewind/fast-forward
 - Test the `sdk/` Poster firmware on hardware: album art download, colour fade, progress bar, volume, touch controls
 - Run the robustness and measurement tests in sdk/README.md before PCB design
 - Planned: home screen to choose Phone or SD card; SD card player (MP3/WAV, cover art from tags, full seek); Bluetooth output to AirPods for SD music
