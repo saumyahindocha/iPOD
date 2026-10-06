@@ -4,8 +4,8 @@
 // What you should see:
 //   1. Backlight turns on, screen flashes red, green, blue
 //   2. A "Pod" title screen with the words "Touch me"
-//   3. Wherever you press, a dot appears; the raw touch numbers show at the bottom
-//      (and in the Serial Monitor at 115200 baud); dots should land under your finger
+//   3. Wherever you press, a dot appears under your finger
+//   4. The bottom line shows touch pressure vs the threshold (green = counted as a touch)
 //
 // Wiring (Pico 2 W):
 //   Display: CS GP17, DC GP16, RESET GP21, MOSI GP19, SCK GP18, LED GP13, MISO not connected
@@ -14,19 +14,14 @@
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
-#include <XPT2046_Touchscreen.h>
+#include <PodTouch.h>
 
 const int PIN_SCK = 18, PIN_MOSI = 19, PIN_MISO = 20;
 const int TFT_CS = 17, TFT_DC = 16, TFT_RST = 21, TFT_LED = 13;
 const int TOUCH_CS = 22, TOUCH_IRQ = 26;
 
 Adafruit_ILI9341 tft(&SPI, TFT_DC, TFT_CS, TFT_RST);
-XPT2046_Touchscreen touch(TOUCH_CS, TOUCH_IRQ);
-
-// Touch calibration, measured on this board (2026-10-07).
-// Both axes run backwards relative to the screen, so "left" and "top" are the HIGH raw values.
-const int RAW_X_LEFT = 3540, RAW_X_RIGHT = 565;
-const int RAW_Y_TOP  = 3680, RAW_Y_BOTTOM = 380;
+PodTouch touch(TOUCH_CS);
 
 void drawHome() {
   tft.fillScreen(ILI9341_BLACK);
@@ -58,28 +53,30 @@ void setup() {
   tft.fillScreen(ILI9341_GREEN); delay(400);
   tft.fillScreen(ILI9341_BLUE);  delay(400);
 
-  touch.begin(SPI);
-  touch.setRotation(0);
+  touch.begin();
+  touch.threshold = 120;   // lower = lighter touch; the old library used 300
 
   drawHome();
   Serial.println("Display test ready - touch the screen");
 }
 
 void loop() {
-  if (!touch.touched()) return;
+  PodTouchPoint p;
+  bool pressed = touch.read(p);
 
-  TS_Point p = touch.getPoint();
-  int x = constrain(map(p.x, RAW_X_LEFT, RAW_X_RIGHT, 0, tft.width() - 1), 0, tft.width() - 1);
-  int y = constrain(map(p.y, RAW_Y_TOP, RAW_Y_BOTTOM, 0, tft.height() - 1), 0, tft.height() - 1);
+  // Live pressure readout so we can tune the threshold
+  static unsigned long lastShown = 0;
+  if (millis() - lastShown > 100) {
+    lastShown = millis();
+    tft.fillRect(0, 296, 240, 24, ILI9341_BLACK);
+    tft.setTextSize(2);
+    tft.setTextColor(pressed ? ILI9341_GREEN : ILI9341_DARKGREY);
+    tft.setCursor(4, 300);
+    tft.printf("press %4d / %d", p.pressure, touch.threshold);
+  }
 
-  tft.fillCircle(x, y, 4, ILI9341_YELLOW);
-
-  tft.fillRect(0, 296, 240, 24, ILI9341_BLACK);
-  tft.setTextSize(2);
-  tft.setTextColor(ILI9341_CYAN);
-  tft.setCursor(4, 300);
-  tft.printf("raw %4d,%4d", p.x, p.y);
-
-  Serial.printf("raw x=%d y=%d  ->  screen x=%d y=%d\n", p.x, p.y, x, y);
-  delay(20);
+  if (!pressed) return;
+  tft.fillCircle(p.x, p.y, 4, ILI9341_YELLOW);
+  Serial.printf("pressure=%d raw=%d,%d screen=%d,%d\n", p.pressure, p.rawX, p.rawY, p.x, p.y);
+  delay(10);
 }

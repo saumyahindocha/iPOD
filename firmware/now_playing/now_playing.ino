@@ -9,17 +9,13 @@
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
-#include <XPT2046_Touchscreen.h>
+#include <PodTouch.h>
 
 // ---------- Pins ----------
 const int PIN_SCK = 18, PIN_MOSI = 19, PIN_MISO = 20;
 const int TFT_CS = 17, TFT_DC = 16, TFT_RST = 21, TFT_LED = 13;
 const int TOUCH_CS = 22, TOUCH_IRQ = 26;
 const int I2S_DATA = 9, I2S_BCLK = 10;   // WSEL is GP11 (BCLK + 1)
-
-// ---------- Touch calibration (measured 2026-10-07; both axes reversed) ----------
-const int RAW_X_LEFT = 3540, RAW_X_RIGHT = 565;
-const int RAW_Y_TOP  = 3680, RAW_Y_BOTTOM = 380;
 
 // ---------- Colours (RGB565) ----------
 const uint16_t BG      = 0x0000;   // black
@@ -31,7 +27,7 @@ const uint16_t DIM     = 0x4208;   // dark grey
 I2S i2s(OUTPUT);
 A2DPSink a2dp;
 Adafruit_ILI9341 tft(&SPI, TFT_DC, TFT_CS, TFT_RST);
-XPT2046_Touchscreen touch(TOUCH_CS, TOUCH_IRQ);
+PodTouch touch(TOUCH_CS);   // calibration lives in PodTouch
 
 // State shared with Bluetooth callbacks
 volatile bool connected = false;
@@ -128,8 +124,8 @@ void setup() {
   tft.setRotation(0);
   tft.setTextWrap(false);
   tft.fillScreen(BG);
-  touch.begin(SPI);
-  touch.setRotation(0);
+  touch.begin();
+  touch.threshold = 120;
 
   drawArtPlaceholder();
 
@@ -170,13 +166,9 @@ void loop() {
   // Touch: act once per press, on the moment the finger lands
   if (millis() - lastPoll < 20) return;
   lastPoll = millis();
-  bool isTouched = touch.touched();
-  if (isTouched && !wasTouched) {
-    TS_Point p = touch.getPoint();
-    int x = constrain(map(p.x, RAW_X_LEFT, RAW_X_RIGHT, 0, 239), 0, 239);
-    int y = constrain(map(p.y, RAW_Y_TOP, RAW_Y_BOTTOM, 0, 319), 0, 319);
-    handleTap(x, y);
-  }
+  PodTouchPoint p;
+  bool isTouched = touch.read(p);
+  if (isTouched && !wasTouched) handleTap(p.x, p.y);
   wasTouched = isTouched;
 
   // BOOTSEL still works as play / pause

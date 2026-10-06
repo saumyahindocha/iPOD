@@ -1,4 +1,3 @@
 # Arduino libraries the build installs (one per line, exact Library Manager names)
 Adafruit GFX Library
 Adafruit ILI9341
-XPT2046_Touchscreen

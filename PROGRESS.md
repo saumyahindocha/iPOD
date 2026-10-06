@@ -12,6 +12,7 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 - `bt_sink` works: iPhone pairs with "Pod" and streams Spotify through the DAC to headphones (core requirement met)
 - `display_test` works: screen and touch both respond
 - Calibrated touch from corner readings: both axes run backwards (dots were landing in the opposite corner)
+- Touch needed a hard press: the XPT2046_Touchscreen library has a fixed pressure cutoff of 300. Wrote `PodTouch`, our own driver with an adjustable threshold (now 120), extra averaging and the calibration built in
 - Added `now_playing`: first combined firmware (Bluetooth audio + track info on screen + touch controls)
 
 **Fixed**

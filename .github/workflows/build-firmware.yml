@@ -56,6 +56,7 @@ jobs:
             # (e.g. Bluetooth on); otherwise the default FQBN is used.
             if [ -f "$dir/sketch.yaml" ]; then fqbn_arg=(); else fqbn_arg=(--fqbn "$FQBN"); fi
             arduino-cli compile "${fqbn_arg[@]}" --additional-urls "$BOARD_URL" \
+              --libraries firmware/libraries \
               --output-dir "build/$name" "$dir"
             cp "build/$name/$name.ino.uf2" "uf2/$name.uf2"
             echo "::endgroup::"
