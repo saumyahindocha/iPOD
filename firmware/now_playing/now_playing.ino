@@ -125,7 +125,7 @@ void setup() {
   tft.setTextWrap(false);
   tft.fillScreen(BG);
   touch.begin();
-  touch.threshold = 120;
+  touch.threshold = 60;
 
   drawArtPlaceholder();
 

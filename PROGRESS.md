@@ -12,15 +12,14 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 - `bt_sink` works: iPhone pairs with "Pod" and streams Spotify through the DAC to headphones (core requirement met)
 - `display_test` works: screen and touch both respond
 - Calibrated touch from corner readings: both axes run backwards (dots were landing in the opposite corner)
-- Touch needed a hard press: the XPT2046_Touchscreen library has a fixed pressure cutoff of 300. Wrote `PodTouch`, our own driver with an adjustable threshold (now 120), extra averaging and the calibration built in
-- Added `now_playing`: first combined firmware (Bluetooth audio + track info on screen + touch controls)
+- Touch needed a hard press: the XPT2046_Touchscreen library has a fixed pressure cutoff of 300. Wrote `PodTouch`, our own driver with an adjustable threshold (set to 60 after testing), extra averaging and the calibration built in
+- `now_playing` works: Bluetooth audio, track info on screen and touch controls together (first combined firmware); only album art is missing
 
 **Fixed**
 - Breadboard wiring didn't match the plan: T_DO was on GP21, RESET on GP20, MOSI on GP21 and display MISO connected. Moved to RESET → GP21, T_DO → GP20, MOSI → GP19, MISO disconnected (GP21 isn't a valid SPI0 data pin)
 - Local Arduino IDE compiles failed because the laptop's antivirus removed parts of the compiler toolchain; moved compiling to GitHub Actions
 
 **Next**
-- Test `now_playing` on the iPhone: track info updates, buttons respond, audio stays clean while the screen redraws
 - Work out how to get album art from the iPhone for the Poster layout
 
 ## 2026-09-26 — Repository started

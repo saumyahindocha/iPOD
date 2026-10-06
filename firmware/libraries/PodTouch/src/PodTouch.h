@@ -19,7 +19,7 @@ class PodTouch {
 public:
   // Pressure needed to count as a touch. Lower = lighter touch, but too low
   // picks up noise. The old library used 300.
-  int threshold = 120;
+  int threshold = 60;
 
   // How many back-to-back readings must agree before a touch counts (stops ghost taps)
   int confirmReads = 2;

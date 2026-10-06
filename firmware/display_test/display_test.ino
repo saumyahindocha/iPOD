@@ -54,7 +54,7 @@ void setup() {
   tft.fillScreen(ILI9341_BLUE);  delay(400);
 
   touch.begin();
-  touch.threshold = 120;   // lower = lighter touch; the old library used 300
+  touch.threshold = 60;    // lower = lighter touch; the old library used 300
 
   drawHome();
   Serial.println("Display test ready - touch the screen");
