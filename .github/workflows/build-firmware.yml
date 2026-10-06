@@ -46,7 +46,10 @@ jobs:
             name=$(basename "$dir")
             [ -f "$dir/$name.ino" ] || continue
             echo "::group::Compiling $name"
-            arduino-cli compile --fqbn "$FQBN" --additional-urls "$BOARD_URL" \
+            # A sketch.yaml in the sketch folder can set its own board options
+            # (e.g. Bluetooth on); otherwise the default FQBN is used.
+            if [ -f "$dir/sketch.yaml" ]; then fqbn_arg=(); else fqbn_arg=(--fqbn "$FQBN"); fi
+            arduino-cli compile "${fqbn_arg[@]}" --additional-urls "$BOARD_URL" \
               --output-dir "build/$name" "$dir"
             cp "build/$name/$name.ino.uf2" "uf2/$name.uf2"
             echo "::endgroup::"

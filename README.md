@@ -57,10 +57,23 @@ The Pico 2 W replaced an earlier ESP32-S3 plan because the ESP32-S3 has no Bluet
 
 SD_CS → GP7; shares GP18 (SCK), GP19 (MOSI) and GP20 (MISO) with the display bus.
 
+## Building the firmware
+
+Sketches live in `firmware/<name>/<name>.ino`. Every push that touches `firmware/` triggers the **Build firmware** GitHub Action, which compiles each sketch for the Pico 2 W with `arduino-cli` and the [arduino-pico](https://github.com/earlephilhower/arduino-pico) core. A `sketch.yaml` in a sketch folder can set its own board options (e.g. Bluetooth on).
+
+To flash: open the latest run under **Actions**, download the **pod-firmware** artifact, hold BOOTSEL while plugging in the Pico, and drag the `.uf2` onto the RP2350 drive.
+
+| Sketch | What it does |
+|---|---|
+| `blink` | Blinks the onboard LED (build + flash check) |
+| `tone_test` | 440 Hz tone through the DAC (I2S wiring check) |
+| `bt_sink` | Bluetooth A2DP receiver named "Pod": phone → DAC → headphones |
+
 ## Repository layout
 
 ```
-firmware/   Pico 2 W source code
+firmware/   Pico 2 W sketches (one folder per sketch)
+.github/    GitHub Actions build
 hardware/   schematics, wiring photos, later the PCB
 docs/       notes and datasheets
 PROGRESS.md dated build log
