@@ -56,7 +56,21 @@ static mutex_t mbox_lock;
 static uint32_t mbox_dirty;
 static pod_state_t mbox;
 static uint8_t mbox_art[POD_ART_MAX_BYTES];
-static volatile pod_cmd_t mbox_cmd;
+
+// Touch -> core 0 command queue (single producer: core 1, single consumer: core 0)
+#define CMDQ_LEN 8
+static volatile uint8_t cmdq[CMDQ_LEN];
+static volatile uint32_t cmdq_w, cmdq_r;
+static volatile int mbox_vol_req = -1;       // latest volume set on the Pod's slider
+static volatile uint32_t mbox_vol_seq;       // bumped on every slider change (core 0 tracks what it applied)
+
+static void push_cmd(pod_cmd_t c) {
+    uint32_t w = cmdq_w;
+    if (w - cmdq_r >= CMDQ_LEN) return;     // full: drop (only happens if core 0 stalls)
+    cmdq[w % CMDQ_LEN] = (uint8_t)c;
+    __dmb();
+    cmdq_w = w + 1;
+}
 
 // core-1-private
 static pod_state_t cur;
@@ -194,6 +208,8 @@ static uint32_t current_pos_ms(void) {
     return (uint32_t)p;
 }
 
+static int hl_zone = POD_CMD_NONE;           // skip button being held (seeking)
+
 static void draw_controls(void) {
     gfx_fill_rect(0, CTRL_Y, GFX_W, GFX_H - CTRL_Y, base);
     rgb_t track = gfx_mix(base, WHITE, 80);
@@ -211,6 +227,8 @@ static void draw_controls(void) {
         gfx_text(&pod_font_small, BAR_X1, TIME_Y, b, tc, 2);
     }
     rgb_t ic = gfx_mix(WHITE, base, 16);
+    if (hl_zone == POD_CMD_PREV) gfx_circle(72, BTN_Y, BTN_R, gfx_mix(base, WHITE, 70));
+    if (hl_zone == POD_CMD_NEXT) gfx_circle(168, BTN_Y, BTN_R, gfx_mix(base, WHITE, 70));
     draw_skip(72, BTN_Y, 14, ic, false);
     draw_skip(168, BTN_Y, 14, ic, true);
     gfx_circle(120, BTN_Y, BTN_R, WHITE);
@@ -317,7 +335,64 @@ static bool decode_art(size_t len) {
     return true;
 }
 
+// ========================================================= volume overlay
+// Tap the album art to open a volume slider over it; drag to set the volume.
+// It closes by itself after a few seconds without a touch.
+#define OV_Y0      92
+#define OV_H       72
+#define OV_X0      24
+#define OV_X1      216
+#define OV_BAR_Y   (OV_Y0 + 46)
+#define OV_TIMEOUT_MS 3000
+
+static uint16_t ov_save[GFX_W * OV_H];          // the art under the overlay, restored on every redraw
+static bool ov_visible;
+static int ov_vol = 50;
+static uint32_t ov_last_ms;
+
+static void ov_capture(void) { memcpy(ov_save, gfx_fb + OV_Y0 * GFX_W, sizeof ov_save); }
+
+static void ov_draw(void) {
+    memcpy(gfx_fb + OV_Y0 * GFX_W, ov_save, sizeof ov_save);
+    for (int y = 0; y < OV_H; y++) {             // dark band with soft top/bottom edges
+        int a = 170;
+        if (y < 10) a = a * y / 10;
+        if (y > OV_H - 11) a = a * (OV_H - 1 - y) / 10;
+        for (int x = 0; x < GFX_W; x++) gfx_blend_px(x, OV_Y0 + y, (rgb_t){0, 0, 0}, a);
+    }
+    char pct[8]; snprintf(pct, sizeof pct, "%d%%", ov_vol);
+    gfx_text(&pod_font_body, OV_X0, OV_Y0 + 12, "Volume", WHITE, 0);
+    gfx_text(&pod_font_body, OV_X1, OV_Y0 + 12, pct, WHITE, 2);
+    gfx_capsule(OV_X0, OV_X1, OV_BAR_Y, 3.0f, (rgb_t){110, 110, 118});
+    int xp = OV_X0 + (OV_X1 - OV_X0) * ov_vol / 100;
+    if (xp > OV_X0) gfx_capsule(OV_X0, xp, OV_BAR_Y, 3.0f, WHITE);
+    gfx_circle(xp, OV_BAR_Y, 8, WHITE);
+}
+
+static void ov_show(void) {
+    render_full();
+    ov_capture();
+    ov_vol = cur.volume >= 0 ? cur.volume : 50;
+    ov_visible = true;
+    ov_draw();
+    blit_all();
+}
+
+static void ov_hide(void) {
+    ov_visible = false;
+    render_full();                               // also refreshes "Vol NN%" in the status bar
+    blit_all();
+}
+
+static int ov_vol_from_x(int x) {
+    int v = (x - OV_X0) * 100 / (OV_X1 - OV_X0);
+    return v < 0 ? 0 : v > 100 ? 100 : v;
+}
+
 // ================================================================ core 1
+enum { K_NONE = 0, K_ZONE, K_ART, K_VOL_DRAG };
+#define HOLD_MS 450                              // press-and-hold on skip = fast-forward / rewind
+
 static int zone_at(int x, int y) {
     if (y < BTN_Y - 26) return POD_CMD_NONE;
     if (x < 96) return POD_CMD_PREV;
@@ -327,8 +402,10 @@ static int zone_at(int x, int y) {
 
 static void core1_main(void) {
     flash_safe_execute_core_init();          // core 0 may write BT pairing keys to flash
-    int press_zone = -1;
     uint32_t last_touch_ms = 0;
+    bool down = false, seeking = false;
+    int kind = K_NONE, zone = POD_CMD_NONE;
+    uint32_t press_ms = 0;
 
     while (true) {
         uint32_t dirty = 0;
@@ -347,42 +424,97 @@ static void core1_main(void) {
             has_art = decode_art(art_len);
             if (!has_art) base = IDLE_BASE;
         }
-        if (dirty & (D_ART | D_ART_CLEAR | D_TEXT | D_STATUS | D_VOL)) {
+        if (dirty & (D_ART | D_ART_CLEAR | D_TEXT | D_STATUS)) {
             absolute_time_t t0 = get_absolute_time();
             render_full();
+            if (ov_visible) { ov_capture(); ov_draw(); }
             blit_all();
             if (dirty & D_ART) printf("Pod: frame rendered in %lld ms\n", absolute_time_diff_us(t0, get_absolute_time()) / 1000);
-        } else if (dirty & (D_PLAY | D_PROGRESS)) {
-            draw_controls();
-            blit_rows(CTRL_Y, GFX_H - CTRL_Y);
-        } else if (cur.playing && cur.len_ms && current_pos_ms() / 1000 != shown_pos_s) {
-            draw_controls();                  // tick the progress bar once a second
-            blit_rows(CTRL_Y, GFX_H - CTRL_Y);
+        } else if (dirty & D_VOL) {
+            if (ov_visible) {
+                if (kind != K_VOL_DRAG && cur.volume >= 0) { ov_vol = cur.volume; ov_draw(); blit_rows(OV_Y0, OV_H); }
+            } else {
+                render_full();
+                blit_all();
+            }
+        }
+        if (!(dirty & (D_ART | D_ART_CLEAR | D_TEXT | D_STATUS))) {
+            if (dirty & (D_PLAY | D_PROGRESS) ||
+                (cur.playing && cur.len_ms && current_pos_ms() / 1000 != shown_pos_s)) {
+                draw_controls();                  // tick the progress bar once a second
+                blit_rows(CTRL_Y, GFX_H - CTRL_Y);
+            }
         }
 
-        // ---- touch: act on release, only if it started and ended in the same button
+        // ---- touch
         uint32_t now = to_ms_since_boot(get_absolute_time());
         if (now - last_touch_ms >= 20) {
             last_touch_ms = now;
             xpt2046_raw_t r;
-            int sx, sy;
-            if (xpt2046_irq_active() && xpt2046_read(&r) && map_touch(&r, &sx, &sy)) {
-                int z = zone_at(sx, sy);
-                if (press_zone < 0) press_zone = z;
-                else if (press_zone != z) press_zone = POD_CMD_NONE;
-            } else if (!xpt2046_irq_active() && press_zone >= 0) {
-                if (press_zone != POD_CMD_NONE) {
-                    mbox_cmd = (pod_cmd_t)press_zone;
-                    if (press_zone == POD_CMD_PLAYPAUSE) {      // instant visual feedback
-                        cur.playing = !cur.playing;
-                        cur.pos_ms = current_pos_ms(); cur.pos_stamp_us = time_us_64();
+            int sx = 0, sy = 0;
+            bool irq = xpt2046_irq_active();
+            bool got = irq && xpt2046_read(&r) && map_touch(&r, &sx, &sy);
+            bool was_down = down;
+            if (got) down = true;
+            else if (!irq) down = false;          // irq on but too light to read: keep previous state
+
+            if (down && !was_down && got) {       // ---- finger lands
+                press_ms = now;
+                seeking = false;
+                if (ov_visible && sy >= OV_Y0 && sy < OV_Y0 + OV_H) {
+                    kind = K_VOL_DRAG;
+                } else if (sy >= BTN_Y - 26) {
+                    kind = K_ZONE; zone = zone_at(sx, sy);
+                } else if (sy >= SCRIM_H && sy < TITLE_Y - 8) {
+                    kind = K_ART;
+                } else {
+                    kind = K_NONE;
+                }
+            }
+
+            if (down && got) {                    // ---- finger held / moving
+                if (kind == K_VOL_DRAG) {
+                    int v = ov_vol_from_x(sx);
+                    if (v != ov_vol) {
+                        ov_vol = v;
+                        mbox_vol_req = v; __dmb(); mbox_vol_seq++;
+                        ov_draw(); blit_rows(OV_Y0, OV_H);
+                    }
+                    ov_last_ms = now;
+                } else if (kind == K_ZONE && !seeking && now - press_ms >= HOLD_MS &&
+                           (zone == POD_CMD_PREV || zone == POD_CMD_NEXT) && zone_at(sx, sy) == zone) {
+                    seeking = true;
+                    push_cmd(zone == POD_CMD_NEXT ? POD_CMD_FF_START : POD_CMD_REW_START);
+                    hl_zone = zone;
+                    draw_controls();
+                    blit_rows(CTRL_Y, GFX_H - CTRL_Y);
+                }
+            }
+
+            if (!down && was_down) {              // ---- finger lifts
+                if (kind == K_ZONE) {
+                    if (seeking) {
+                        push_cmd(POD_CMD_SEEK_STOP);
+                        hl_zone = POD_CMD_NONE;
                         draw_controls();
                         blit_rows(CTRL_Y, GFX_H - CTRL_Y);
+                    } else if (zone != POD_CMD_NONE) {
+                        push_cmd((pod_cmd_t)zone);
+                        if (zone == POD_CMD_PLAYPAUSE) {      // instant visual feedback
+                            cur.playing = !cur.playing;
+                            cur.pos_ms = current_pos_ms(); cur.pos_stamp_us = time_us_64();
+                            draw_controls();
+                            blit_rows(CTRL_Y, GFX_H - CTRL_Y);
+                        }
                     }
+                } else if (kind == K_ART) {
+                    if (ov_visible) ov_hide(); else { ov_show(); ov_last_ms = now; }
                 }
-                press_zone = -1;
+                kind = K_NONE;
+                seeking = false;
             }
         }
+        if (ov_visible && !down && now - ov_last_ms > OV_TIMEOUT_MS) ov_hide();
         sleep_ms(5);
     }
 }
@@ -461,7 +593,19 @@ void pod_display_set_art(const uint8_t *jpeg, size_t len) {
 }
 
 pod_cmd_t pod_display_take_command(void) {
-    pod_cmd_t c = mbox_cmd;
-    if (c != POD_CMD_NONE) mbox_cmd = POD_CMD_NONE;
+    uint32_t r = cmdq_r;
+    if (r == cmdq_w) return POD_CMD_NONE;
+    pod_cmd_t c = (pod_cmd_t)cmdq[r % CMDQ_LEN];
+    __dmb();
+    cmdq_r = r + 1;
     return c;
+}
+
+int pod_display_take_volume(void) {
+    static uint32_t applied_seq;
+    uint32_t seq = mbox_vol_seq;
+    if (seq == applied_seq) return -1;
+    __dmb();
+    applied_seq = seq;
+    return mbox_vol_req;
 }

@@ -110,7 +110,11 @@ A quiet tone plays: left ear, right ear, both, silence, repeating.
      `album art 200x200 … decoded`, then `frame rendered in N ms`
 5. Tap **prev / play-pause / next** at the bottom of the screen. Spotify should
    respond. Serial: `Pod: touch command N sent`.
+   **Press and hold** prev / next to rewind / fast-forward (release to stop).
+   How far it scrubs depends on the app; Bluetooth has no "jump to time" command.
 6. Move the iPhone volume slider. "Vol NN%" updates and the loudness changes.
+7. **Tap the album art** to open the Pod's volume slider and drag it. The sound changes
+   and the iPhone's volume slider follows. It closes by itself after 3 s.
 
 ---
 

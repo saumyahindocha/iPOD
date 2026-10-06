@@ -11,7 +11,10 @@
 
 #define POD_ART_MAX_BYTES (32 * 1024)   // AVRCP thumbnails: 200x200 JPEG, typically 8-25 KB
 
-typedef enum { POD_CMD_NONE = 0, POD_CMD_PREV, POD_CMD_PLAYPAUSE, POD_CMD_NEXT } pod_cmd_t;
+typedef enum {
+    POD_CMD_NONE = 0, POD_CMD_PREV, POD_CMD_PLAYPAUSE, POD_CMD_NEXT,
+    POD_CMD_FF_START, POD_CMD_REW_START, POD_CMD_SEEK_STOP,   // press-and-hold on next / prev
+} pod_cmd_t;
 
 // Core 0, before Bluetooth starts: init display + touch, run first-boot touch
 // calibration (or when a finger is on the screen at power-up), save it to flash.
@@ -30,5 +33,9 @@ void pod_display_clear_track(void);                 // disconnect: back to the i
 void pod_display_clear_art(void);                   // track without artwork
 void pod_display_set_art(const uint8_t *jpeg, size_t len);
 
-// Core 0: fetch a transport command from a touch tap (POD_CMD_NONE if none).
+// Core 0: fetch the next transport command from touch (POD_CMD_NONE if none).
+// Commands are queued, so call this in a loop until it returns POD_CMD_NONE.
 pod_cmd_t pod_display_take_command(void);
+// Core 0: latest volume (0..100) the user set on the Pod's volume slider,
+// or -1 if it hasn't changed since the last call.
+int pod_display_take_volume(void);

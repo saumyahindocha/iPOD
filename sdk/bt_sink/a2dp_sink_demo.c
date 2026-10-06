@@ -846,11 +846,13 @@ static void pod_art_reconnect_handler(btstack_timer_source_t * ts){
 // Every ~1 s: ask the phone for the play position so the progress bar stays true.
 static btstack_timer_source_t pod_ui_timer;
 static uint32_t pod_ui_ticks;
+static uint8_t a2dp_sink_demo_set_volume_percentage(uint16_t avrcp_cid, int new_volume_percentage);
 
 static void pod_ui_timer_handler(btstack_timer_source_t * ts){
     uint16_t cid = a2dp_sink_demo_avrcp_connection.avrcp_cid;
-    pod_cmd_t cmd = pod_display_take_command();
-    if (cid != 0){
+    pod_cmd_t cmd;
+    while ((cmd = pod_display_take_command()) != POD_CMD_NONE){
+        if (cid == 0) continue;
         switch (cmd){
             case POD_CMD_PREV:      avrcp_controller_backward(cid); break;
             case POD_CMD_NEXT:      avrcp_controller_forward(cid);  break;
@@ -858,11 +860,32 @@ static void pod_ui_timer_handler(btstack_timer_source_t * ts){
                 if (a2dp_sink_demo_avrcp_connection.playing) avrcp_controller_pause(cid);
                 else avrcp_controller_play(cid);
                 break;
+            // press-and-hold on the skip buttons: scrub, then re-sync the progress bar
+            case POD_CMD_FF_START:  avrcp_controller_press_and_hold_fast_forward(cid); break;
+            case POD_CMD_REW_START: avrcp_controller_press_and_hold_rewind(cid);       break;
+            case POD_CMD_SEEK_STOP:
+                avrcp_controller_release_press_and_hold_cmd(cid);
+                avrcp_controller_get_play_status(cid);
+                break;
             default: break;
         }
-        if (cmd != POD_CMD_NONE) printf("Pod: touch command %d sent\n", (int) cmd);
-        if ((++pod_ui_ticks % 25) == 0) avrcp_controller_get_play_status(cid);
+        printf("Pod: touch command %d sent\n", (int) cmd);
     }
+
+    // Volume slider on the Pod: apply locally and tell the phone (its slider follows).
+    // Rate-limited so dragging doesn't flood the phone with notifications.
+    static int pending_volume = -1;
+    static uint32_t last_volume_ms;
+    int v = pod_display_take_volume();
+    if (v >= 0) pending_volume = v;
+    uint32_t now_ms = btstack_run_loop_get_time_ms();
+    if (pending_volume >= 0 && now_ms - last_volume_ms >= 120){
+        (void) a2dp_sink_demo_set_volume_percentage(cid, pending_volume);
+        pending_volume = -1;
+        last_volume_ms = now_ms;
+    }
+
+    if (cid != 0 && (++pod_ui_ticks % 25) == 0) avrcp_controller_get_play_status(cid);
     btstack_run_loop_set_timer(ts, 40);
     btstack_run_loop_add_timer(ts);
 }

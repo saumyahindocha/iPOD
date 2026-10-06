@@ -21,8 +21,10 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 - Local Arduino IDE compiles failed because the laptop's antivirus removed parts of the compiler toolchain; moved compiling to GitHub Actions
 
 **Next**
+- Pod-side controls in `sdk/`: tap the album art for a volume slider (synced with the iPhone via AVRCP absolute volume), press-and-hold prev/next to rewind/fast-forward
 - Test the `sdk/` Poster firmware on hardware: album art download, colour fade, progress bar, volume, touch controls
 - Run the robustness and measurement tests in sdk/README.md before PCB design
+- Planned: home screen to choose Phone or SD card; SD card player (MP3/WAV, cover art from tags, full seek); Bluetooth output to AirPods for SD music
 
 ## 2026-09-26 — Repository started
 
