@@ -14,13 +14,15 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 - Calibrated touch from corner readings: both axes run backwards (dots were landing in the opposite corner)
 - Touch needed a hard press: the XPT2046_Touchscreen library has a fixed pressure cutoff of 300. Wrote `PodTouch`, our own driver with an adjustable threshold (set to 60 after testing), extra averaging and the calibration built in
 - `now_playing` works: Bluetooth audio, track info on screen and touch controls together (first combined firmware); only album art is missing
+- Recovered the full Poster firmware from an earlier design session (Pico SDK, C, with album art over AVRCP Cover Art) and added it as `sdk/`, with its own GitHub Actions build. Touch threshold lowered from 300 to 60 there too
 
 **Fixed**
 - Breadboard wiring didn't match the plan: T_DO was on GP21, RESET on GP20, MOSI on GP21 and display MISO connected. Moved to RESET → GP21, T_DO → GP20, MOSI → GP19, MISO disconnected (GP21 isn't a valid SPI0 data pin)
 - Local Arduino IDE compiles failed because the laptop's antivirus removed parts of the compiler toolchain; moved compiling to GitHub Actions
 
 **Next**
-- Work out how to get album art from the iPhone for the Poster layout
+- Test the `sdk/` Poster firmware on hardware: album art download, colour fade, progress bar, volume, touch controls
+- Run the robustness and measurement tests in sdk/README.md before PCB design
 
 ## 2026-09-26 — Repository started
 

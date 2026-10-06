@@ -59,7 +59,20 @@ Touch calibration (this board): both axes are reversed. Raw X ≈ 3540 at the le
 
 SD_CS → GP7; shares GP18 (SCK), GP19 (MOSI) and GP20 (MISO) with the display bus.
 
+## Firmware overview
+
+Pod has two firmware tracks:
+
+- **`sdk/` — the main firmware** (C, Raspberry Pi Pico SDK + BTstack). Bluetooth audio with **album art over AVRCP Cover Art**, the Poster Now Playing screen rendered on the second core, anti-aliased Inter text, progress bar, volume and touch controls. See [sdk/README.md](sdk/README.md) for its test plan.
+- **`firmware/` — Arduino bring-up sketches** used to test each part of the hardware on its own (LED, DAC, Bluetooth, screen, touch).
+
+![Poster UI preview](docs/ui_preview_poster.png)
+
 ## Building the firmware
+
+The **Build SDK firmware** action compiles `sdk/` and publishes the `pod-sdk-firmware` artifact. The Arduino sketches are built by the **Build firmware** action as described below.
+
+### Arduino sketches
 
 Sketches live in `firmware/<name>/<name>.ino`. Every push that touches `firmware/` triggers the **Build firmware** GitHub Action, which compiles each sketch for the Pico 2 W with `arduino-cli` and the [arduino-pico](https://github.com/earlephilhower/arduino-pico) core. A `sketch.yaml` in a sketch folder can set its own board options (e.g. Bluetooth on), `firmware/libraries.txt` lists the Arduino libraries the build installs, and Pod's own libraries live in `firmware/libraries/` (e.g. `PodTouch`, the touch driver).
 
@@ -76,7 +89,8 @@ To flash: open the latest run under **Actions**, download the **pod-firmware** a
 ## Repository layout
 
 ```
-firmware/   Pico 2 W sketches (one folder per sketch)
+sdk/        main firmware (Pico SDK, C)
+firmware/   Arduino bring-up sketches (one folder per sketch)
 .github/    GitHub Actions build
 hardware/   schematics, wiring photos, later the PCB
 docs/       notes and datasheets

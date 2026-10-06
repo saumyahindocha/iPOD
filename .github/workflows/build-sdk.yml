@@ -1,0 +1,59 @@
+# Builds Pod's main firmware (sdk/, Pico SDK in C) for the Pico 2 W
+# and publishes the .uf2 files as a downloadable artifact.
+
+name: Build SDK firmware
+
+on:
+  push:
+    paths:
+      - "sdk/**"
+      - ".github/workflows/build-sdk.yml"
+  workflow_dispatch:
+
+env:
+  PICO_SDK_VERSION: "2.3.1"
+  PICO_EXTRAS_VERSION: "sdk-2.3.1"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Install the ARM compiler and build tools
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q gcc-arm-none-eabi libnewlib-arm-none-eabi \
+            libstdc++-arm-none-eabi-newlib cmake ninja-build
+
+      - name: Reuse the Pico SDK from earlier runs
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/pico
+          key: pico-sdk-${{ env.PICO_SDK_VERSION }}-${{ env.PICO_EXTRAS_VERSION }}-v1
+
+      - name: Download Pico SDK and pico-extras
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/pico && cd ~/pico
+          git clone --depth 1 -b "$PICO_SDK_VERSION" https://github.com/raspberrypi/pico-sdk
+          git -C pico-sdk submodule update --init --depth 1 \
+            lib/btstack lib/cyw43-driver lib/tinyusb lib/lwip lib/mbedtls
+          git clone --depth 1 -b "$PICO_EXTRAS_VERSION" https://github.com/raspberrypi/pico-extras
+
+      - name: Build
+        run: |
+          export PICO_SDK_PATH=~/pico/pico-sdk
+          export PICO_EXTRAS_PATH=~/pico/pico-extras
+          cmake -S sdk -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          ninja -C build
+          mkdir -p uf2 && cp build/*.uf2 uf2/
+          ls -l uf2
+
+      - name: Publish the .uf2 files
+        uses: actions/upload-artifact@v4
+        with:
+          name: pod-sdk-firmware
+          path: uf2/*.uf2
