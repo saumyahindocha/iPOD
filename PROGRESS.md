@@ -14,9 +14,16 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 - Going home was fiddly (tiny target at the top edge; SD mode needed backing out of every folder): added a house-icon Home button with a large touch area on Now Playing (both modes) and in the library header, a "Going home…" message, and recalibration now needs a 1.5 s hold at power-up so a quick tap during the restart can't trigger it
 - Main firmware renamed to `pod.uf2`; core-0 stack raised to 4 KB for the MP3 decoder and FatFs
 
+**PCB Rev A decisions**
+- RP2350A chip + Raspberry Pi RM2 radio on our own board; keep the 2.8" resistive screen module, plugged into sockets; 1000 mAh LiPo (503450); play/pause/wake button + power/hold slide switch
+- Everything else on the board: USB-C + BQ24074 charger with power path, MAX17048 gauge, TPS63802 3.3 V buck-boost, PCM5102A DAC + jack, 16 MB flash, 8 MB PSRAM
+- Board 50 × 94 mm (module footprint + 8 mm antenna tab so the screen doesn't block Bluetooth); Pod about 55 × 100 × 20 mm
+- Spec with every connection in `docs/pcb-plan.md`; KiCad project started in `hardware/pod-pcb` (five sheets with checklists, 4-layer board outline, rules)
+
 **Next**
+- Measure the screen module (outline, holes, header positions) and fix the board outline
+- Draw Sheet 1 (Power) in KiCad, push for review
 - Wire the SD header (CS GP7, SCK GP18, MOSI GP19, MISO GP20), test SD mode
-- PCB design (see `docs/pcb-plan.md`)
 
 ## 2026-10-07 — First firmware running
 

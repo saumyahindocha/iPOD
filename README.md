@@ -102,14 +102,14 @@ To flash: open the latest run under **Actions**, download the **pod-firmware** a
 sdk/        main firmware (Pico SDK, C)
 firmware/   Arduino bring-up sketches (one folder per sketch)
 .github/    GitHub Actions build
-hardware/   schematics, wiring photos, later the PCB
+hardware/   KiCad PCB project (hardware/pod-pcb)
 docs/       notes and datasheets
 PROGRESS.md dated build log
 ```
 
 ## PCB, battery and enclosure
 
-The plan for the compact board (RP2350 + RM2 radio, 2.0" capacitive IPS screen, USB-C charging, LiPo with fuel gauge, 3D-printed case) is in [docs/pcb-plan.md](docs/pcb-plan.md).
+Rev A board: RP2350A + RM2 Bluetooth, the 2.8" screen module on sockets, USB-C charging, 1000 mAh LiPo with fuel gauge, play/pause button and power switch. The design spec is [docs/pcb-plan.md](docs/pcb-plan.md); the KiCad project is in [hardware/pod-pcb](hardware/pod-pcb).
 
 ## Progress
 
