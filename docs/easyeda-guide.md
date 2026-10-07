@@ -313,14 +313,131 @@ this page. That's expected: they connect to the RP2350 on page 2.
 
 ---
 
-## Part E — The other four sheets (same method)
+## Part D2 — Drawing Sheet 2: MCU, step by step
+
+Open page **2 MCU**. This follows Raspberry Pi's own **RP2350 minimal design** (from their
+*Hardware design with RP2350* guide), plus our PSRAM and GPIO labels. The RP2350 has 60 pins, so
+work **by pin name**: every pin on the symbol is named, and the names below match them.
+
+**Capacitors on this page:** 100 nF **0402**, 4.7 µF **0402** (rated **6.3 V or more**), 15 pF
+**0402** (type C0G / NP0). All are Basic parts.
+
+### M1. Place the chip
+
+Search `RP2350A` (LCSC **C42411118**). It must be **QFN-60**; the RP2350**B** is a different,
+larger chip. Put it in the middle of the page. Draw each group below around the side of the chip
+where its pins are.
+
+### M2. Supply pins (3.3 V side)
+
+- [ ] **Every pin named `IOVDD`** → `3V3`, with its **own 100 nF** to GND. There are several
+      IOVDD pins, so place one capacitor per pin.
+- [ ] **QSPI_IOVDD** → `3V3`, 100 nF to GND
+- [ ] **USB_OTP_VDD** → `3V3`, 100 nF to GND
+- [ ] **ADC_AVDD** → `3V3`, 100 nF to GND
+- [ ] The **GND** pin(s) and the exposed pad → `GND`
+- [ ] **TESTEN** (if your symbol has it) → `GND`
+
+### M3. The chip's built-in 1.1 V regulator
+
+The RP2350 makes its own 1.1 V core supply. Name that net `1V1`.
+
+- [ ] **VREG_VIN** → `3V3`, with **4.7 µF** to GND
+- [ ] **VREG_AVDD** → resistor **33 Ω** → `3V3`, with **4.7 µF** from VREG_AVDD to GND. The
+      resistor and capacitor filter the regulator's supply.
+- [ ] **VREG_LX** → inductor **3.3 µH** → `1V1`. Use the exact part Raspberry Pi specifies:
+      search `AOTA-B201610S3R3-101-T` (2016 size). It has a dot on one end, and the orientation
+      matters. Draw it either way round for now; I'll tell you which end goes where during layout.
+- [ ] **VREG_FB** → `1V1`
+- [ ] **VREG_PGND** → `GND`
+- [ ] **4.7 µF** from `1V1` to GND (the regulator's output capacitor)
+- [ ] **Every pin named `DVDD`** → `1V1`, each with its **own 100 nF** to GND
+
+### M4. Crystal (12 MHz)
+
+Search `ABM8-272-T3` (3.2 × 2.5 mm, 4 pins). Pins 1 and 3 are the crystal; pins 2 and 4 are its
+metal lid.
+
+- [ ] **XIN** → crystal pin 1
+- [ ] **XOUT** → resistor **1 kΩ** → crystal pin 3
+- [ ] Crystal pin 1 → **15 pF** → GND
+- [ ] Crystal pin 3 → **15 pF** → GND
+- [ ] Crystal pins 2 and 4 → GND
+
+### M5. Flash (16 MB) and PSRAM (8 MB)
+
+The two chips have the **same pinout** and share every wire except chip-select.
+
+Search `W25Q128JVSIQ` (SOIC-8, **208 mil** wide) and `APS6404L-3SQR` (SOIC-8, 150 mil).
+
+| Pin | Flash pin name | PSRAM pin name | Net |
+|---|---|---|---|
+| 1 | /CS | CE# | flash: `QSPI_SS`; PSRAM: `PSRAM_CS` |
+| 2 | DO (IO1) | SO / SIO1 | `QSPI_SD1` |
+| 3 | /WP (IO2) | SIO2 | `QSPI_SD2` |
+| 4 | GND | VSS | `GND` |
+| 5 | DI (IO0) | SI / SIO0 | `QSPI_SD0` |
+| 6 | CLK | SCLK | `QSPI_SCLK` |
+| 7 | /HOLD (IO3) | SIO3 | `QSPI_SD3` |
+| 8 | VCC | VDD | `3V3`, with **100 nF** to GND on each chip |
+
+- [ ] On the RP2350: label **QSPI_SS**, **QSPI_SCLK** and **QSPI_SD0–SD3** with the same names.
+- [ ] **PSRAM_CS** → **10 kΩ** to `3V3`, so the PSRAM stays off until the firmware starts it.
+
+### M6. Buttons and USB
+
+- [ ] **BOOTSEL:** `QSPI_SS` → resistor **1 kΩ** → button SW3 → GND
+- [ ] **RUN:** RUN pin → **10 kΩ** to `3V3`, and RUN → button SW4 → GND
+- [ ] For both buttons, search `TS-1088` or `tactile 3x4` and pick a small SMD 2-pin or 4-pin
+      button. With 4-pin buttons, the pins are joined in pairs: check the symbol, and wire one
+      pair to each side.
+- [ ] **USB_DP** → **27 Ω** → `USB_DP_C`
+- [ ] **USB_DM** → **27 Ω** → `USB_DM_C`
+
+(`USB_DP_C` and `USB_DM_C` are the labels you already used on the Power page, so this joins the
+chip to the USB-C socket.)
+
+### M7. SWD and GPIO labels
+
+- [ ] **SWCLK** → label `SWCLK`. **SWDIO** → label `SWDIO`. (I'll add pads for these in layout.)
+- [ ] One short stub and label on each GPIO pin, from this table:
+
+| GPIO | Label | | GPIO | Label |
+|---|---|---|---|---|
+| 0 | No Connect flag | | 16 | `LCD_DC` |
+| 1 | `HP_DET` | | 17 | `LCD_CS` |
+| 2 | `GAUGE_ALRT_N` | | 18 | `SPI0_SCK` |
+| 3 | `REG_PG` | | 19 | `SPI0_MOSI` |
+| 4 | `I2C_SDA` | | 20 | `SPI0_MISO` |
+| 5 | `I2C_SCL` | | 21 | `LCD_RST` |
+| 6 | `BTN_PLAY_N` | | 22 | `TOUCH_CS` |
+| 7 | `SD_CS` | | 23 | `RM2_ON` |
+| 8 | `PSRAM_CS` | | 24 | `RM2_DATA` |
+| 9 | `I2S_DIN` | | 25 | `RM2_CS` |
+| 10 | `I2S_BCK` | | 26 | `TOUCH_IRQ` |
+| 11 | `I2S_LRCK` | | 27 | `PGOOD_N` |
+| 12 | `DAC_XSMT` | | 28 | `CHG_N` |
+| 13 | `LCD_LED` | | 29 | `RM2_CLK` |
+| 14, 15 | No Connect flag | | | |
+
+The labels must be **spelled exactly** like this, including underscores. They connect to the
+other pages through these names.
+
+### M8. Check and send
+
+1. **Design → Annotate**, then **Design → Check DRC**. After this page, the `CHG_N`, `I2C_SDA`
+   and similar warnings from the Power page should disappear, because both ends now exist.
+2. Send the PDF of pages 1 and 2, plus the **BOM**.
+
+---
+
+## Part E — The other sheets (same method)
 
 Use the same steps: place the chip, then go through its spec section line by line, with stubs and
 labels. Draw them in this order, sending a PDF after each one:
 
 | Page | What's on it | Beginner tips |
 |---|---|---|
-| **2 MCU** | RP2350A, flash, PSRAM, crystal, USB, BOOTSEL and RUN buttons | The hardest page, because the RP2350 has 60 pins. Copy Raspberry Pi's **"RP2350 minimal design"** schematic (in their *Hardware design with RP2350* PDF) exactly, then add PSRAM and the GPIO net labels from the spec's GPIO map. Draw one block at a time: power pins and capacitors, then the core regulator, then the crystal, then flash, then USB, then the GPIO labels. You can send me partial PDFs. |
 | **3 Radio** | RM2 module | The RM2 is probably **not** in EasyEDA's library, so you'll need to make its symbol and footprint (see Part F). Do this page after page 2. |
 | **4 Audio** | PCM5102A DAC, headphone jack | Straightforward: about 12 capacitors and resistors, all listed in the spec. |
 | **5 Screen** | the two sockets for the screen module, the play button, mounting holes | Use generic **1×14** and **1×4 female header, 2.54 mm** parts. Pin 1 of each socket must get the net from the spec's pin table. Mounting holes are placed on the PCB in Part G, not here. |

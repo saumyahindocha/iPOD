@@ -2,6 +2,19 @@
 
 Newest entries at the top. Each entry: what was done, what broke, what's next.
 
+## 2026-10-07 (evening) — Power sheet drawn in EasyEDA
+
+**Done**
+- Moved PCB design to EasyEDA Pro (online); wrote a beginner guide with click-by-click checklists (`docs/easyeda-guide.md`)
+- Sheet 1 (Power) drawn and reviewed: USB-C + ESD, BQ24074 charger, battery connector, power switch, TPS63802 3.3 V regulator, MAX17048 gauge
+- Resistor values changed to standard JLCPCB Basic parts: ISET 1.8 kΩ (0.49 A charging), ILIM 1.2 kΩ (1.34 A input limit), regulator feedback 56 kΩ / 10 kΩ (still 3.30 V)
+
+**Fixed in review**
+- Charger IN, the second OUT pin and the second BAT pin were unconnected; the two 22 µF output capacitors were in series; the gauge's 1 µF capacitor was missing; regulator PG label added
+
+**Next**
+- Sheet 2 (MCU): RP2350A minimal design + flash + PSRAM + GPIO labels (checklist in the guide, Part D2)
+
 ## 2026-10-07 (later) — Home screen, SD player, battery
 
 **Done (built and tested on a PC, waiting for the SD card + wires to test on hardware)**

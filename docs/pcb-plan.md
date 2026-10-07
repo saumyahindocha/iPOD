@@ -112,6 +112,12 @@ jlcpcb.com/parts and put its LCSC number in the part's `LCSC` field in KiCad.
 regulator (VREG_VIN, VREG_AVDD filter, VREG_LX inductor to DVDD, DVDD capacitors), the 12 MHz crystal
 with its load capacitors and series resistor, the flash, BOOTSEL and RUN. This is the proven part.
 
+Minimal-design values (from *Hardware design with RP2350*): 100 nF on every IOVDD, DVDD, QSPI_IOVDD,
+USB_OTP_VDD and ADC_AVDD pin; VREG_VIN 4.7 µF; VREG_AVDD fed through **33 Ω** with 4.7 µF; VREG_LX →
+**3.3 µH** (Abracon AOTA-B201610S3R3-101-T, polarity marked) → `1V1`, VREG_FB → `1V1`, 4.7 µF on `1V1`;
+crystal ABM8-272-T3 with **15 pF** load capacitors and **1 kΩ** in series with XOUT; RUN pull-up **10 kΩ**.
+TESTEN → GND. Pin-by-pin checklist: `docs/easyeda-guide.md`, Part D2.
+
 Changes from the minimal design:
 - **U6 flash:** W25Q128JVS (16 MB) on QSPI_SS / SCLK / SD0–SD3.
 - **U7 PSRAM:** APS6404L shares QSPI_SCLK and QSPI_SD0–SD3 with the flash; its CE# → **GP8**
