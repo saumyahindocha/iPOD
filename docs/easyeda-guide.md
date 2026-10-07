@@ -352,6 +352,83 @@ These are the same pins your breadboard uses, so the firmware runs unchanged.
 
 ---
 
+## Part D3 — Drawing Sheet 3: Audio, step by step
+
+Open page **3 Audio**. It has two groups: the **DAC** (it turns the Pico's digital music into an
+analog signal) and the **headphone jack**.
+
+**Parts on this page** (all 0402 Basic unless noted):
+
+| Value | Count | Notes |
+|---|---|---|
+| 100 nF | 3 | |
+| 10 µF **0603** | 3 | rated 10 V or more |
+| 2.2 µF | 2 | rated 10 V or more |
+| 1 µF | 1 | |
+| 2.2 nF | 2 | type C0G / NP0 |
+| 470 Ω | 2 | |
+| 10 kΩ | 1 | |
+| 4.7 kΩ | 1 | |
+| Ferrite bead 600 Ω @ 100 MHz, **0603** | 1 | search `600R 0603 ferrite`, pick a Basic one |
+
+### A1. The DAC (U8)
+
+Search `PCM5102APWR` (TSSOP-20). Its pins are numbered 1–20; the names below match the symbol.
+
+**Power**
+
+- [ ] **CPVDD** (1) → `3V3`, with **100 nF** and **10 µF** to GND
+- [ ] **CPGND** (3) → GND
+- [ ] **CAPP** (2) ↔ **CAPM** (4): one **2.2 µF** capacitor *between these two pins* (neither end to GND)
+- [ ] **VNEG** (5) → **2.2 µF** → GND
+- [ ] **AVDD** (8) → net `AVDD_DAC`. Then the **ferrite bead** from `3V3` to `AVDD_DAC`, and
+      **10 µF** + **100 nF** from `AVDD_DAC` to GND. *(The bead keeps digital noise out of the
+      analog supply.)*
+- [ ] **AGND** (9) → GND
+- [ ] **DVDD** (20) → `3V3`, with **100 nF** and **10 µF** to GND
+- [ ] **DGND** (19) → GND
+- [ ] **LDOO** (18) → **1 µF** → GND (nothing else on this pin)
+
+**Digital inputs from the Pico**
+
+- [ ] **BCK** (13) → `I2S_BCK`
+- [ ] **DIN** (14) → `I2S_DIN`
+- [ ] **LRCK** (15) → `I2S_LRCK`
+- [ ] **SCK** (12) → GND *(the DAC makes its own clock, exactly as on your breadboard)*
+- [ ] **XSMT** (17) → `DAC_XSMT`, and **10 kΩ** from `DAC_XSMT` to GND *(muted until the
+      firmware un-mutes it: no pop at power-on)*
+
+**Settings pins**
+
+- [ ] **DEMP** (10), **FLT** (11), **FMT** (16) → GND
+
+**Outputs**
+
+- [ ] **OUTL** (6) → **470 Ω** → label `HP_L`, and **2.2 nF** from `HP_L` to GND
+- [ ] **OUTR** (7) → **470 Ω** → label `HP_R`, and **2.2 nF** from `HP_R` to GND
+
+### A2. The headphone jack (J5)
+
+Search **`C5353507`** (CUI **SJ-43515TS-SMT-TR**). It has 5 pins:
+
+- [ ] Pin **1** (sleeve) → GND
+- [ ] Pin **4** (ring 2) → GND *(an ordinary headphone plug touches both pin 1 and pin 4 with its
+      ground)*
+- [ ] Pin **2** (tip) → `HP_L`
+- [ ] Pin **3** (ring 1) → `HP_R`
+- [ ] Pin **5** (tip switch) → **4.7 kΩ** → `HP_DET`
+
+If C5353507 shows no stock, don't swap in another jack yourself: send me a screenshot and I'll pick
+one, because jacks number their pins differently.
+
+### A3. Check and send
+
+1. **Design → Annotate**, then **Design → Check DRC**. `I2S_BCK`, `I2S_DIN`, `I2S_LRCK`,
+   `DAC_XSMT` and `HP_DET` now have both ends, so their warnings should go.
+2. Send the PDF (all pages) and the **BOM**.
+
+---
+
 ## Part E — The other pages (same method)
 
 Use the same steps: place the chip, then go through its section of the spec line by line, with
@@ -359,7 +436,6 @@ stubs and labels. Send a PDF after each one.
 
 | Page | What's on it | Beginner tips |
 |---|---|---|
-| **3 Audio** | PCM5102A DAC, headphone jack | About 12 capacitors and resistors, all listed in the spec. |
 | **4 Screen** | the two sockets for the screen module, the play button | Use generic **1×14** and **1×4 female header, 2.54 mm** parts. Pin 1 of each socket must get the net from the spec's pin table. Mounting holes are placed on the PCB in Part G, not here. |
 
 ---
