@@ -1,10 +1,14 @@
 // Build (from sdk/tools/preview):
 //   cc -O1 -w -Istub -I../../common -I../../third_party/tjpgd preview.c ../../common/pod_gfx.c ../../common/pod_fonts.c ../../third_party/tjpgd/tjpgd.c -lm -o preview
-//   ./preview cover.jpg      -> writes 1_home.ppm ... 6_library_playing.ppm
+//   ./preview cover.jpg [wallpaper.raw]   -> writes 0_home_fallback.ppm ... 6_library_playing.ppm
+//   (wallpaper.raw: 240x320 big-endian RGB565, e.g. bytes 32.. of make_wallpaper.py's blob)
 // Renders Pod's screens on a PC into PPM images (uses the real pod_display.c).
 #include "../../common/pod_display.c"
 #include <stdlib.h>
 uint64_t host_now_us = 1000000;
+static uint16_t wall[240 * 320];
+static int have_wall;
+const uint16_t *pod_wallpaper(void) { return have_wall ? wall : NULL; }
 void xpt2046_init(void) {}
 bool xpt2046_irq_active(void) { return false; }
 bool xpt2046_read(xpt2046_raw_t *o) { (void)o; return false; }
@@ -24,8 +28,15 @@ static void load_art(const char *path) {
 }
 int main(int argc, char **argv) {
     cur.volume = -1; cur.battery = 72; cur.charging = false; cur.list_highlight = -1;
-    // 1. home
+    // 1. home: generated art, then the wallpaper given as argv[2] (raw 240x320 big-endian RGB565)
+    render_home(-1); blit_all(); save("0_home_fallback.ppm");
+    if (argc > 2) {
+        FILE *wf = fopen(argv[2], "rb");
+        if (wf && fread(wall, 2, 240 * 320, wf) == 240 * 320) have_wall = 1;
+        if (wf) fclose(wf);
+    }
     render_home(-1); blit_all(); save("1_home.ppm");
+    render_home(0); blit_all(); save("1b_home_pressed.ppm");
     // 2. SD library list
     sd_mode = true;
     pod_display_list_begin("SD card", true);

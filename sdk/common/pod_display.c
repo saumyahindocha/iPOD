@@ -16,6 +16,8 @@
 #include "xpt2046.h"
 #include "pod_gfx.h"
 #include "tjpgd.h"
+#include "pod_logo.h"
+#include "pod_wallpaper.h"
 
 // =================================================================== layout
 // Option C "Poster": 240x240 full-bleed art fading into an accent colour.
@@ -750,36 +752,147 @@ static void core1_main(void) {
 
 // ============================================================== home screen
 // Runs on core 0 before core 1 starts, so it can draw and read touch directly.
+// Wallpaper (if installed) full-bleed, soft scrims, SH monogram, and two
+// frosted-glass tiles that blur whatever is behind them.
+#define HOME_TILE_Y   212
+#define HOME_TILE_H   92
+#define HOME_TILE_W   102
+static const int home_tile_x[2] = { 14, 124 };
+static const rgb_t GARNET = {196, 32, 72};
+static const rgb_t BLAUGRANA_BLUE = {44, 96, 214};
+
 static void draw_phone_icon(int cx, int cy, rgb_t c, rgb_t bg) {
-    round_rect(cx - 9, cy - 15, 18, 30, 4, c);
-    gfx_fill_rect(cx - 7, cy - 11, 14, 21, bg);
-    gfx_fill_rect(cx - 3, cy + 11, 6, 2, bg);
+    round_rect(cx - 6, cy - 10, 12, 20, 3, c);
+    gfx_fill_rect(cx - 4, cy - 7, 8, 13, bg);
+    gfx_fill_rect(cx - 2, cy + 7, 4, 1, bg);
 }
 
 static void draw_sd_icon(int cx, int cy, rgb_t c, rgb_t bg) {
-    round_rect(cx - 11, cy - 14, 22, 28, 3, c);
-    gfx_triangle(cx + 4, cy - 15, cx + 12, cy - 15, cx + 12, cy - 7, bg);      // clipped corner
-    for (int i = 0; i < 4; i++) gfx_fill_rect(cx - 7 + i * 4, cy - 10, 2, 6, bg); // contacts
+    round_rect(cx - 7, cy - 9, 14, 18, 2, c);
+    gfx_triangle(cx + 2, cy - 10, cx + 8, cy - 10, cx + 8, cy - 4, bg);         // clipped corner
+    for (int i = 0; i < 3; i++) gfx_fill_rect(cx - 4 + i * 3, cy - 6, 2, 4, bg); // contacts
+}
+
+static void draw_logo(int x, int y, rgb_t c) {
+    for (int j = 0; j < POD_LOGO_SIZE; j++)
+        for (int i = 0; i < POD_LOGO_SIZE; i++) {
+            int a = pod_logo_alpha[j * POD_LOGO_SIZE + i];
+            if (a) gfx_blend_px(x + i, y + j, c, a);
+        }
+}
+
+// Letter-spaced text (for small caps labels like "POD").
+static void text_tracked(const pod_font_t *f, int x, int y, const char *s, rgb_t c, int track) {
+    char ch[2] = {0, 0};
+    for (; *s; s++) { ch[0] = *s; gfx_text(f, x, y, ch, c, 0); x += gfx_text_width(f, ch) + track; }
+}
+
+// Fallback art when no wallpaper is installed: deep garnet and blue light blooms.
+static void draw_home_fallback(void) {
+    for (int y = 0; y < GFX_H; y++)
+        for (int x = 0; x < GFX_W; x++) {
+            int d1 = (x - 40) * (x - 40) + (y - 60) * (y - 60);
+            int d2 = (x - 210) * (x - 210) + (y - 190) * (y - 190);
+            int a1 = 256 - d1 / 110; if (a1 < 0) a1 = 0;
+            int a2 = 256 - d2 / 130; if (a2 < 0) a2 = 0;
+            rgb_t c = {14, 14, 20};
+            c = gfx_mix(c, GARNET, a1 * 3 / 4);
+            c = gfx_mix(c, BLAUGRANA_BLUE, a2 * 3 / 5);
+            static const uint8_t bayer[4][4] = {{0, 8, 2, 10}, {12, 4, 14, 6}, {3, 11, 1, 9}, {15, 7, 13, 5}};
+            int dz = bayer[y & 3][x & 3] / 2;                 // ordered dither hides 16-bit colour banding
+            c = (rgb_t){ (uint8_t)(c.r + dz > 255 ? 255 : c.r + dz), (uint8_t)(c.g + dz / 2 > 255 ? 255 : c.g + dz / 2),
+                         (uint8_t)(c.b + dz > 255 ? 255 : c.b + dz) };
+            gfx_fb[y * GFX_W + x] = gfx_pack(c);
+        }
+}
+
+// Separable box blur of an RGB block (in place), two passes = soft "frosted" look.
+static void blur_rgb(rgb_t *p, int w, int h, int r) {
+    rgb_t line[GFX_W > GFX_H ? GFX_W : GFX_H];
+    for (int pass = 0; pass < 2; pass++) {
+        for (int y = 0; y < h; y++) {                       // horizontal
+            for (int x = 0; x < w; x++) line[x] = p[y * w + x];
+            for (int x = 0; x < w; x++) {
+                int R = 0, G = 0, B = 0, n = 0;
+                for (int k = -r; k <= r; k++) { int xx = x + k; if (xx < 0) xx = 0; if (xx >= w) xx = w - 1; R += line[xx].r; G += line[xx].g; B += line[xx].b; n++; }
+                p[y * w + x] = (rgb_t){ (uint8_t)(R / n), (uint8_t)(G / n), (uint8_t)(B / n) };
+            }
+        }
+        for (int x = 0; x < w; x++) {                       // vertical
+            for (int y = 0; y < h; y++) line[y] = p[y * w + x];
+            for (int y = 0; y < h; y++) {
+                int R = 0, G = 0, B = 0, n = 0;
+                for (int k = -r; k <= r; k++) { int yy = y + k; if (yy < 0) yy = 0; if (yy >= h) yy = h - 1; R += line[yy].r; G += line[yy].g; B += line[yy].b; n++; }
+                p[y * w + x] = (rgb_t){ (uint8_t)(R / n), (uint8_t)(G / n), (uint8_t)(B / n) };
+            }
+        }
+    }
+}
+
+// Anti-aliased coverage of a rounded rectangle at pixel (i, j), 0..256.
+static int rr_cover(int i, int j, int w, int h, int r) {
+    float cx = i + 0.5f, cy = j + 0.5f, dx = 0, dy = 0;
+    if (cx < r) dx = r - cx; else if (cx > w - r) dx = cx - (w - r);
+    if (cy < r) dy = r - cy; else if (cy > h - r) dy = cy - (h - r);
+    if (dx == 0 && dy == 0) return 256;
+    float d = r - __builtin_sqrtf(dx * dx + dy * dy) + 0.5f;
+    return d <= 0 ? 0 : d >= 1 ? 256 : (int)(d * 256);
+}
+
+// Frosted backdrop of one tile. Borrows the volume overlay's buffer, which is
+// never in use while the home screen is up (saves 28 KB of RAM).
+_Static_assert(sizeof(rgb_t) * HOME_TILE_W * HOME_TILE_H <= sizeof ov_save, "home tile scratch too big");
+#define home_bg ((rgb_t *)ov_save)
+
+static void draw_glass_tile(int t, bool pressed) {
+    int x0 = home_tile_x[t], y0 = HOME_TILE_Y, w = HOME_TILE_W, h = HOME_TILE_H, r = 16;
+    for (int j = 0; j < h; j++)
+        for (int i = 0; i < w; i++) home_bg[j * w + i] = gfx_unpack(gfx_fb[(y0 + j) * GFX_W + x0 + i]);
+    blur_rgb(home_bg, w, h, 7);
+    rgb_t tint = pressed ? (rgb_t){255, 255, 255} : (rgb_t){210, 214, 228};
+    for (int j = 0; j < h; j++)
+        for (int i = 0; i < w; i++) {
+            int cov = rr_cover(i, j, w, h, r);
+            if (!cov) continue;
+            rgb_t c = gfx_mix(home_bg[j * w + i], (rgb_t){0, 0, 0}, 70);    // darken a touch
+            c = gfx_mix(c, tint, pressed ? 70 : 34);                          // milky glass
+            int edge = rr_cover(i - 1, j - 1, w - 2, h - 2, r - 1);           // 1 px light rim
+            if (edge < 256) c = gfx_mix(c, (rgb_t){255, 255, 255}, (256 - edge) * 90 / 256);
+            if (j < h / 2) c = gfx_mix(c, (rgb_t){255, 255, 255}, (h / 2 - j) * 18 / (h / 2));   // top sheen
+            gfx_blend_px(x0 + i, y0 + j, c, cov);
+        }
+    rgb_t accent = t == 0 ? GARNET : BLAUGRANA_BLUE;
+    gfx_circle(x0 + 28, y0 + 28, 15, accent);
+    if (t == 0) draw_phone_icon(x0 + 28, y0 + 28, WHITE, accent); else draw_sd_icon(x0 + 28, y0 + 28, WHITE, accent);
+    draw_chevron_right(x0 + w - 22, y0 + 22, 11, (rgb_t){235, 235, 240});
+    gfx_text(&pod_font_title, x0 + 13, y0 + 49, t == 0 ? "Phone" : "SD card", WHITE, 0);
+    gfx_text(&pod_font_small, x0 + 14, y0 + 73, t == 0 ? "Bluetooth stream" : "Saved music", (rgb_t){220, 222, 232}, 0);
 }
 
 static void render_home(int pressed) {
-    for (int y = 0; y < GFX_H; y++) gfx_hline_dither(y, gfx_mix((rgb_t){46, 46, 56}, (rgb_t){22, 22, 27}, y * 256 / GFX_H));
-    draw_battery(GFX_W - 8, 6);
-    gfx_text(&pod_font_title, 120, 46, "Pod", WHITE, 1);
-    gfx_text(&pod_font_body, 120, 72, "What would you like to play?", (rgb_t){170, 170, 180}, 1);
-    const char *t[2] = { "Phone", "SD card" };
-    const char *st[2] = { "Stream from your iPhone", "Music saved on the card" };
-    for (int i = 0; i < 2; i++) {
-        int y = 104 + i * 104;
-        rgb_t card = pressed == i ? (rgb_t){78, 78, 92} : (rgb_t){52, 52, 62};
-        round_rect(16, y, GFX_W - 32, 90, 14, card);
-        rgb_t accent = i == 0 ? (rgb_t){249, 115, 98} : (rgb_t){110, 170, 250};
-        gfx_circle(58, y + 45, 24, accent);
-        if (i == 0) draw_phone_icon(58, y + 45, WHITE, accent); else draw_sd_icon(58, y + 45, WHITE, accent);
-        gfx_text(&pod_font_title, 96, y + 26, t[i], WHITE, 0);
-        gfx_text(&pod_font_small, 96, y + 52, st[i], (rgb_t){185, 185, 195}, 0);
+    // 1. wallpaper, or generated art
+    const uint16_t *wp = pod_wallpaper();
+    if (wp) memcpy(gfx_fb, wp, sizeof gfx_fb);
+    else draw_home_fallback();
+    // 2. scrims: top for the logo, bottom for the tiles (smoothstep)
+    for (int y = 0; y < 76; y++) {
+        int a = 150 * (76 - y) / 76;
+        for (int x = 0; x < GFX_W; x++) gfx_blend_px(x, y, (rgb_t){0, 0, 0}, a);
     }
-    gfx_text(&pod_font_small, 120, GFX_H - 16, "Tap the top-left corner to come back here", (rgb_t){120, 120, 132}, 1);
+    for (int y = 172; y < GFX_H; y++) {
+        int t = (y - 172) * 256 / (GFX_H - 172);
+        t = t * t * (768 - 2 * t) / 65536;
+        for (int x = 0; x < GFX_W; x++) gfx_blend_px(x, y, (rgb_t){6, 6, 10}, t * 215 / 256);
+    }
+    // 3. brand: SH monogram + letter-spaced wordmark
+    draw_logo(14, 12, WHITE);
+    text_tracked(&pod_font_status, 62, 18, "POD", WHITE, 3);
+    gfx_text(&pod_font_small, 62, 32, "Music, your way", (rgb_t){200, 200, 210}, 0);
+    draw_battery(GFX_W - 12, 16);
+    // 4. tiles
+    text_tracked(&pod_font_small, 16, 192, "CHOOSE A SOURCE", (rgb_t){215, 215, 225}, 2);
+    draw_glass_tile(0, pressed == 0);
+    draw_glass_tile(1, pressed == 1);
 }
 
 pod_source_t pod_display_home(void) {
@@ -792,7 +905,10 @@ pod_source_t pod_display_home(void) {
         xpt2046_raw_t r;
         int sx, sy;
         if (xpt2046_irq_active() && xpt2046_read(&r) && map_touch(&r, &sx, &sy)) {
-            int p = (sx >= 16 && sx < GFX_W - 16) ? (sy >= 104 && sy < 194 ? 0 : sy >= 208 && sy < 298 ? 1 : -1) : -1;
+            int p = -1;
+            if (sy >= HOME_TILE_Y - 6 && sy < HOME_TILE_Y + HOME_TILE_H + 6)
+                for (int t = 0; t < 2; t++)
+                    if (sx >= home_tile_x[t] - 4 && sx < home_tile_x[t] + HOME_TILE_W + 4) p = t;
             if (p != pressed) { pressed = p; render_home(pressed); blit_all(); }
         } else if (!xpt2046_irq_active() && pressed >= 0) {
             pod_source_t src = pressed == 0 ? POD_SOURCE_PHONE : POD_SOURCE_SD;

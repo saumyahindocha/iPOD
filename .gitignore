@@ -4,3 +4,7 @@ build/
 *.bin
 .vscode/
 .DS_Store
+
+# personal wallpapers (made with sdk/tools/make_wallpaper.py) stay off GitHub
+wallpaper*.uf2
+*.raw

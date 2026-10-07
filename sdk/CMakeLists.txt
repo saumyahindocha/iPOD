@@ -43,6 +43,8 @@ add_executable(pod
     common/pod_display.c            # home, Now Playing, library list - runs on core 1
     common/pod_gfx.c                # anti-aliased framebuffer renderer
     common/pod_fonts.c              # Inter, pre-rendered by tools/gen_fonts.py
+    common/pod_logo.c               # "SH" monogram, tools/gen_logo.py
+    common/pod_wallpaper.c          # home-screen picture in its own flash area (tools/make_wallpaper.py)
     common/pod_spi_lock.c           # display, touch and SD card share SPI0
     common/pod_battery.c            # MAX17048 fuel gauge + low-battery warning
     common/sd_card.c                # SD over SPI

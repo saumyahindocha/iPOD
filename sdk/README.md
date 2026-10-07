@@ -106,7 +106,7 @@ A quiet tone plays: left ear, right ear, both, silence, repeating.
 ### Step 3: Bluetooth + Poster UI → `pod.uf2`, choose **Phone**
 1. **First boot runs touch setup:** tap the 4 dots. The calibration is saved to
    flash. To redo it later, **hold a finger on the screen while plugging in USB**.
-2. The **home screen** asks Phone or SD card: tap **Phone**. The idle screen reads **"Waiting for phone"**.
+2. The **home screen** (SH logo, wallpaper, two glass buttons) asks Phone or SD card: tap **Phone**. The idle screen reads **"Waiting for phone"**.
    Tapping **Pod** (top-left) at any time goes back to the home screen.
 3. On the iPhone, go to Settings → Bluetooth and tap **"Pod xx:xx:…"**. If you
    paired an earlier Pod build, first open it there and choose **"Forget This
@@ -125,6 +125,18 @@ A quiet tone plays: left ear, right ear, both, silence, repeating.
    and the iPhone's volume slider follows. It closes by itself after 3 s.
 
 ---
+
+### Home screen wallpaper (optional)
+The home screen shows a full-screen picture behind the SH logo and the two glass buttons. Without one,
+it shows generated garnet-and-blue art. To install your own (it lives in its own flash area, so
+firmware updates don't erase it, and the picture never goes into the repo):
+
+```
+python3 tools/make_wallpaper.py my_photo.jpg --focus 0.55 --preview check.png
+```
+`--focus` picks the vertical crop (0 = top, 1 = bottom); look at `check.png`, then flash
+`wallpaper.uf2` like firmware (BOOTSEL, drag). Flash `pod.uf2` again afterwards if needed; the two
+never overwrite each other.
 
 ### Step 4: SD card player → `pod.uf2`, choose **SD card**
 **Card:** FAT32 or exFAT, any size. Copy MP3 (CBR or VBR) or WAV (16/24-bit) files; folders are fine.

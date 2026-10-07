@@ -6,6 +6,7 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 
 **Done (built and tested on a PC, waiting for the SD card + wires to test on hardware)**
 - Home screen: choose **Phone** or **SD card**; tapping the top-left corner returns to it
+- Home screen redesign: full-screen wallpaper (installed separately as `wallpaper.uf2` via `sdk/tools/make_wallpaper.py`, kept out of the repo), SH monogram + POD wordmark, frosted-glass buttons that blur the picture behind them, garnet/blue accents; generated fallback art when no wallpaper is installed
 - SD card player in `sdk/sd_player/`: library browser (folders first, A–Z, drag to scroll), MP3 + WAV, tags and cover art (embedded JPEG or cover.jpg), drag-to-seek, hold-to-scrub, auto-advance
 - Track reader tested on a PC with CBR/VBR MP3, MPEG-2 mono, ID3v2.3/2.4 (UTF-8 and UTF-16), WAV 16/24-bit: tags, covers, durations and seek positions all correct
 - SPI bus lock so the screen, touch and SD card share SPI0; full-screen updates release the bus every 24 rows
