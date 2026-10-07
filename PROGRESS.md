@@ -2,6 +2,22 @@
 
 Newest entries at the top. Each entry: what was done, what broke, what's next.
 
+## 2026-10-08 — PCB routed and exported
+
+**Done**
+- Switched the board to carry the Pico 2 W itself (soldered on through its headers) instead of a bare RP2350; dropped the TPS63802 regulator and USB ESD chip (USB-C is charge-only)
+- All four schematic sheets drawn and reviewed: Power, Pico, Audio (PCM5102A + PJ-342 jack with headphone detect), Screen (14-pin and 4-pin sockets, play button)
+- PCB 52 × 109 mm, 2 layers: placed, autorouted with hand-drawn power stubs between the Pico pins, GND pours on both layers, antenna notch and keep-out. DRC clean apart from the expected notch item
+- Exported Gerbers, BOM (23 lines, all LCSC) and pick-and-place; checked drill sizes, outline, copper and positions
+
+**Fixed in review**
+- Many routing problems: power nets too wide to pass between header pins (power width 0.4 mm plus 0.3 mm stubs), GND islands, duplicate vias, stitching vias with no copper, pours not rebuilt
+- Gerber outline had a stray 6.35 mm line from the jack footprint, 2.2 mm inside the bottom edge, which the fab would have milled as a slot; removed from the outline file
+
+**Next**
+- Paper 1:1 fit test with the Pico and screen module, then order from JLCPCB (top-side assembly; hand-solder the Pico and screen sockets)
+- Firmware: headphone detect, charge/power-good status, play button
+
 ## 2026-10-07 (evening) — Power sheet drawn in EasyEDA
 
 **Done**
