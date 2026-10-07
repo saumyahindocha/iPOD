@@ -107,7 +107,7 @@ Practise each step once on a page, then delete everything before starting the re
 **Resistors and capacitors:** don't place a generic resistor and type in its value; it would have
 no LCSC number. Search the exact value and size instead:
 
-- `1.78k 0402` → pick a **Basic** 1 % 0402 result.
+- `1.8k 0402` → pick a **Basic** 1 % 0402 result.
 - `10uF 0603` → pick a Basic 0603 capacitor rated for **10 V or more**.
 
 Once you have one 5.1 kΩ resistor placed, **copy and paste** it (Ctrl+C, Ctrl+V) for the second.
@@ -208,7 +208,7 @@ nine of its pins get a part.
 - [ ] **IN** → `VBUS`, and C1 **4.7 µF** from IN to GND
 - [ ] **OUT** → `VSYS`, and C2 **10 µF** from OUT to GND
 - [ ] **BAT** → `VBAT`, and C3 **10 µF** from BAT to GND
-- [ ] **ISET** → R4 **1.78 kΩ** → GND (sets 0.5 A charging)
+- [ ] **ISET** → R4 **1.8 kΩ** → GND (sets about 0.5 A charging)
 - [ ] **ILIM** → R5 **1.1 kΩ** → GND (sets the 1.46 A input limit)
 - [ ] **ITERM** → R6 **3.0 kΩ** → GND (charging stops at 50 mA)
 - [ ] **TS** → R3 **10 kΩ** → GND
