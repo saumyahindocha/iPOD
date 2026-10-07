@@ -409,17 +409,13 @@ Search `PCM5102APWR` (TSSOP-20). Its pins are numbered 1–20; the names below m
 
 ### A2. The headphone jack (J5)
 
-Search **`C5353507`** (CUI **SJ-43515TS-SMT-TR**). It has 5 pins:
+Search **`C668606`** (SHOU HAN **PJ-342**). Pins, from its datasheet:
 
-- [ ] Pin **1** (sleeve) → GND
-- [ ] Pin **4** (ring 2) → GND *(an ordinary headphone plug touches both pin 1 and pin 4 with its
-      ground)*
-- [ ] Pin **2** (tip) → `HP_L`
-- [ ] Pin **3** (ring 1) → `HP_R`
-- [ ] Pin **5** (tip switch) → **4.7 kΩ** → `HP_DET`
-
-If C5353507 shows no stock, don't swap in another jack yourself: send me a screenshot and I'll pick
-one, because jacks number their pins differently.
+- [ ] Pins **5** and **2** (ground contacts) → GND
+- [ ] Pin **6** (left spring) → `HP_L`
+- [ ] Pin **3** (right spring) → `HP_R`
+- [ ] Pin **7** (switch contact under spring 6) → **4.7 kΩ** → `HP_DET`
+- [ ] Pin **4** (switch contact under spring 3) → No Connect flag
 
 ### A3. Check and send
 

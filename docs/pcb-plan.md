@@ -60,7 +60,7 @@ Prefer JLCPCB **Basic** parts for resistors and capacitors (cheaper assembly).
 | J2 | Battery connector | JST S2B-PH-SM4-TB | PH 2.0 mm | **check your battery's polarity** |
 | J3 | Screen socket | 1×14 female header, 2.54 mm, 8.5 mm tall | THT | module's main pins |
 | J4 | SD socket | 1×4 female header, 2.54 mm, 8.5 mm tall | THT | module's SD pins |
-| J5 | Headphone jack | CUI **SJ-43515TS-SMT-TR** (LCSC C5353507) | SMD, 4-pole + tip switch | pin 1 sleeve, 2 tip, 3 ring 1, 4 ring 2, 5 tip switch |
+| J5 | Headphone jack | SHOU HAN **PJ-342** (LCSC C668606) | SMD, 3.5 mm, two NC switches | 6 / 3 = the two springs (left / right channel), 7 / 4 = their switch contacts, 5 and 2 = ground contacts |
 | SW1 | Power/hold switch | MSK-12C02 | SPDT side slide | |
 | SW2 | Play/pause/wake | side-push SMD tactile | SMD | on the board edge |
 | FB1 | Ferrite bead | Sunlord GZ1608D601TF (LCSC C1002, Basic) | 0603 | DAC analog supply, 600 Ω @ 100 MHz |
@@ -146,8 +146,13 @@ cut-out. Add **10 µF** from `3V3` to GND near pin 36 for the screen's backlight
 - Pin 17 XSMT ← `DAC_XSMT` (GP12), R21 **10 kΩ** to GND, so the DAC is muted until the firmware unmutes
   it. This removes the pop at power-on and between tracks.
 - Pin 6 OUTL → R22 **470 Ω** → `HP_L` (jack tip), **2.2 nF** from `HP_L` to GND. Pin 7 OUTR → R23 **470 Ω** → `HP_R` (jack ring 1), **2.2 nF** from `HP_R` to GND.
-- **J5 jack (SJ-43515TS):** pin 1 sleeve → GND; pin 4 ring 2 → GND (a normal 3-pole headphone plug's sleeve touches both); pin 2 tip → `HP_L`; pin 3 ring 1 → `HP_R`; pin 5 tip switch → R24 **4.7 kΩ** → `HP_DET` (GP1, internal pull-up).
-- *How detect works:* with no plug, the tip switch rests on the tip, so GP1 reads low through the DAC output. A plug pushes it open and GP1 reads high. The 4.7 kΩ limits current into GP1 when the music swings below 0 V. Firmware: keep the DAC muted (XSMT low) unless headphones are in.
+- **J5 jack (PJ-342, C668606)**, pins from the SHOU HAN drawing: 5 and 2 → GND (ground contacts);
+  6 (left spring) → `HP_L`; 3 (right spring) → `HP_R`; 7 (left spring's switch contact) → R24
+  **4.7 kΩ** → `HP_DET`; 4 (right spring's switch contact) → not connected.
+- *How detect works:* with no plug, spring 6 rests on contact 7, so GP1 reads low through the DAC
+  output. A plug lifts the spring and GP1 reads high (internal pull-up). The 4.7 kΩ limits current
+  into GP1 when the music swings below 0 V. Firmware: keep the DAC muted (XSMT low) unless
+  headphones are in. If left and right come out swapped at bring-up, swap them in firmware.
 - The PCM5102A is a line-level output; it drives earbuds at modest volume. If it's too quiet once
   built, a TPA6132A2 headphone amp can go between the DAC and the jack on Rev B.
 
