@@ -255,8 +255,8 @@ Search `TPS63802DLAR` (VSON-10) and `XFL4015-471MEC`. If that inductor isn't sto
 - [ ] **L1** pin of the chip → one end of the inductor L1
 - [ ] **L2** pin of the chip → the other end of L1
 - [ ] **VOUT** → `3V3`, with C6 **22 µF** and C7 **22 µF** from `3V3` to GND
-- [ ] R12 **510 kΩ** from **VOUT** to **FB**
-- [ ] R13 **91 kΩ** from **FB** to GND (with R12, this sets 3.30 V)
+- [ ] R12 **56 kΩ** from **VOUT** to **FB**
+- [ ] R13 **10 kΩ** from **FB** to GND (with R12, this sets 3.30 V)
 - [ ] **MODE** → GND
 - [ ] **PG** → label `REG_PG`, and R14 **100 kΩ** from `REG_PG` to `3V3`
 - [ ] **GND**, **AGND** and the exposed pad → GND

@@ -100,7 +100,7 @@ jlcpcb.com/parts and put its LCSC number in the part's `LCSC` field in KiCad.
 - VIN → `VSYS`, C5 **10 µF** to GND. EN → `REG_EN`.
 - L1 **0.47 µH** between pins L1 and L2.
 - VOUT → `3V3`, C6 **22 µF** + C7 **22 µF** to GND.
-- FB divider: R12 **510 kΩ** from VOUT to FB, R13 **91 kΩ** from FB to GND → 0.5 × (1 + 510/91) = **3.30 V**.
+- FB divider: R12 **56 kΩ** from VOUT to FB, R13 **10 kΩ** from FB to GND → 0.5 × (1 + 56/10) = **3.30 V** (standard values, JLCPCB Basic parts; the divider draws 50 µA, only while the Pod is on).
 - MODE → GND (power-save mode for battery life; tie to 3V3 for forced PWM if you ever hear regulator noise in the audio).
 - PG → `REG_PG` → GP3 with R14 **100 kΩ** to 3V3 (optional; can be left unconnected).
 - AGND and GND → `GND`, joined at the chip.
