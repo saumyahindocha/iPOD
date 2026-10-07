@@ -295,8 +295,8 @@ already on the Pico, so this page is just the Pico and a label on each pin.
 EasyEDA's Pico parts only have flat surface pads, and your Pico has header pins that need holes.
 So the Pico is drawn as **two straight 1×20, 2.54 mm through-hole headers**:
 
-1. Search `1x20 2.54` and pick a straight through-hole single-row 20-pin header (footprint name like
-   `HDR-TH_20P-P2.54-V…`). Place it twice and name them **J6** and **J7**.
+1. In the library search box (**LCSC Electronics** tab), type **`C50981`**: BOOMELE 2.54-1*20P,
+   a straight 1×20 through-hole pin header. Place it twice and name them **J6** and **J7**.
 2. Set **Add into BOM → No** on both (they're only holes for the Pico's own pins).
 3. Add a text note: "J6 = Pico pins 1–20, J7 = Pico pins 21–40".
 4. **J6 pin n = Pico pin n. J7 pin n = Pico pin 20 + n.** Label them from the tables below using
