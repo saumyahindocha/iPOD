@@ -535,6 +535,20 @@ mouse down from the top-left corner. If Y goes negative, add a minus sign to eve
 **Check:** hovering over each square pad should read J6 (1.87, 20.39), J7 (50.13, 2.61), J3 (45.0, 25.0),
 J4 (29.8, 105.9). If one is off, rotate the part 180° and re-enter its centre.
 
+**If EasyEDA's Y axis counts upward** (it does in EasyEDA Pro: the Y ruler goes up from 0), don't
+just type these Y values, or the whole board comes out mirrored top-to-bottom. Use **Y = 109 − y**
+instead, with the board drawn from (0, 0) at the bottom-left up to (52, 109):
+
+| Item | Y-up values |
+|---|---|
+| Outline | (0,0) → (52,0) → (52,90.5) → (42.5,90.5) → (42.5,104.5) → (52,104.5) → (52,109) → (0,109) |
+| J6 centre | (26.00, 88.61); pin 1 at (1.87, 88.61), square pad on the left |
+| J7 centre | (26.00, 106.39); pin 1 at (50.13, 106.39), square pad on the right |
+| J3 centre | (28.49, 84.00); pin 1 at (45.0, 84.0), square pad on the right |
+| J4 centre | (26.00, 3.10); pin 1 at (29.8, 3.1), square pad on the right |
+| Holes | (3.7, 79.1), (48.3, 79.1), (3.7, 3.0), (48.3, 3.0) |
+| Edge parts | USB-C and jack on the bottom edge (y ≈ 0); SW1 y ≈ 64, SW2 y ≈ 49, battery connector y ≈ 24 on the left edge |
+
 Edge parts (roughly): USB-C bottom edge at x ≈ 12.5, opening down; jack bottom edge at x ≈ 38, opening
 down; SW1 left edge at y ≈ 45; SW2 left edge at y ≈ 60, button facing out; battery connector left edge
 at y ≈ 85, opening facing out.
