@@ -12,7 +12,9 @@ play/pause button and power/hold switch. 4 layers, 0.8 mm, 50 × 94 mm.
 | `power.kicad_sch` … `screen_controls.kicad_sch` | One sheet per block, each with its checklist printed on it |
 | `pod-pcb.kicad_pcb` | 4-layer board: outline, module area, M3 holes, battery area, RM2 antenna keep-out |
 
-**Workflow:** open the project in KiCad 9 (it upgrades these KiCad 7 files), draw one sheet to its
+**Designing in EasyEDA instead?** Follow [docs/easyeda-guide.md](../../docs/easyeda-guide.md); the spec is the same.
+
+**Workflow (KiCad):** open the project in KiCad 9 (it upgrades these KiCad 7 files), draw one sheet to its
 checklist, delete the checklist box, commit and push. Each sheet is reviewed against the spec before
 the next one. Start with **Power**.
 
