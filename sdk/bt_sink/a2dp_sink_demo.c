@@ -877,7 +877,7 @@ static void pod_ui_timer_handler(btstack_timer_source_t * ts){
     }
     if (pod_home_requested) {                   // "Pod" tapped in the status bar: back to the home screen
         printf("Pod: back to the home screen\n");
-        watchdog_reboot(0, 0, 10);
+        watchdog_reboot(0, 0, 120);             // let the "Going home" message reach the screen
         while (true) tight_loop_contents();
     }
     if ((pod_ui_ticks % 125) == 0) pod_battery_poll();     // every 5 s

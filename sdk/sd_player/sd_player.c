@@ -215,7 +215,7 @@ static int list_highlight_for(const char *dir) {
 static void show_folder(const char *dir) {
     if (dir != browse_dir) { strncpy(browse_dir, dir, sizeof browse_dir - 1); browse_dir[sizeof browse_dir - 1] = 0; }
     const char *title = browse_dir[0] ? strrchr(browse_dir, '/') + 1 : "SD card";
-    pod_display_list_begin(title, true);         // at the root, back goes home
+    pod_display_list_begin(title, browse_dir[0] != 0);   // back arrow only in sub-folders; Home is its own button
     DIR d;
     FILINFO fi;
     bool full = false;
@@ -345,7 +345,7 @@ static void skip_track(int dir, bool user) {
 // ------------------------------------------------------------------ input
 static void go_home(void) {
     printf("Pod: back to the home screen\n");
-    sleep_ms(30);
+    sleep_ms(120);                                   // let the "Going home" message reach the screen
     watchdog_reboot(0, 0, 10);
     while (true) tight_loop_contents();
 }

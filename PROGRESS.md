@@ -11,6 +11,7 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 - Track reader tested on a PC with CBR/VBR MP3, MPEG-2 mono, ID3v2.3/2.4 (UTF-8 and UTF-16), WAV 16/24-bit: tags, covers, durations and seek positions all correct
 - SPI bus lock so the screen, touch and SD card share SPI0; full-screen updates release the bus every 24 rows
 - Battery icon + "Battery low" warning below 15 %, from a MAX17048 fuel gauge (hidden when none is fitted)
+- Going home was fiddly (tiny target at the top edge; SD mode needed backing out of every folder): added a house-icon Home button with a large touch area on Now Playing (both modes) and in the library header, a "Going home…" message, and recalibration now needs a 1.5 s hold at power-up so a quick tap during the restart can't trigger it
 - Main firmware renamed to `pod.uf2`; core-0 stack raised to 4 KB for the MP3 decoder and FatFs
 
 **Next**

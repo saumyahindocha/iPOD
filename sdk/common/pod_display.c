@@ -252,9 +252,19 @@ static int draw_battery(int xr, int y) {
     return x - 4 - tw;
 }
 
-static void draw_status_bar(const char *left, bool chevron) {
-    int x = 10;
-    if (chevron) { draw_chevron_left(8, 6, 11, WHITE); x = 22; }
+// House icon, 15 x 13, top-left corner at (x, y).
+static void draw_house_icon(int x, int y, rgb_t c) {
+    gfx_triangle(x - 1, y + 6.5f, x + 7.5f, y - 0.5f, x + 16, y + 6.5f, c);   // roof
+    gfx_fill_rect(x + 2, y + 6, 11, 7, c);                                     // walls
+    gfx_fill_rect(x + 6, y + 9, 3, 4, (rgb_t){0, 0, 0});                       // door
+}
+
+// Status bar: [house] Home button, then the status text (SD mode: "< Library" button).
+static void draw_status_bar(const char *left, bool sd) {
+    draw_house_icon(10, 5, WHITE);
+    gfx_fill_rect(33, 5, 1, 13, (rgb_t){150, 150, 160});                      // divider
+    int x = 42;
+    if (sd) { draw_chevron_left(41, 6, 11, WHITE); x = 54; }
     gfx_text(&pod_font_status, x, 5, left, WHITE, 0);
     int xr = draw_battery(GFX_W - 8, 6);
     if (cur.screen == SCREEN_NOW && cur.volume >= 0) {
@@ -411,14 +421,12 @@ static void render_list(void) {
     gfx_fill_rect(0, 0, GFX_W, LIST_HDR_H, (rgb_t){26, 26, 31});
     gfx_fill_rect(0, LIST_HDR_H - 1, GFX_W, 1, line);
     char t[80];
-    gfx_fit(&pod_font_title, list_title, list_can_back ? 150 : 200, t, sizeof t);
+    gfx_fit(&pod_font_title, list_title, 130, t, sizeof t);
     gfx_text(&pod_font_title, 120, 13, t, WHITE, 1);
     if (list_can_back) draw_chevron_left(10, 15, 14, WHITE);
-    if (cur.title[0]) {                       // something is loaded: shortcut back to it
-        draw_play_glyph(GFX_W - 20, 22, 11, WHITE, false);
-    } else {
-        draw_battery(GFX_W - 8, 4);
-    }
+    draw_house_icon(GFX_W - 30, 15, WHITE);   // Home, always
+    if (cur.title[0])                         // something is loaded: shortcut back to it
+        draw_play_glyph(GFX_W - 62, 22, 11, WHITE, false);
     mutex_exit(&list_lock);
 }
 
@@ -557,7 +565,8 @@ static int ov_vol_from_x(int x) {
 }
 
 // ================================================================ core 1
-enum { K_NONE = 0, K_ZONE, K_ART, K_VOL_DRAG, K_SEEK, K_STATUS, K_LIST, K_LIST_BACK, K_LIST_NOW };
+enum { K_NONE = 0, K_ZONE, K_ART, K_VOL_DRAG, K_SEEK, K_STATUS, K_HOME, K_LIST, K_LIST_BACK, K_LIST_NOW };
+#define TOP_TAP_H 52                             // generous: the top edge is where resistive touch is least precise
 #define HOLD_MS 450                              // press-and-hold on skip = fast-forward / rewind
 #define TAP_SLOP 10                              // pixels a tap may wander before it becomes a scroll
 
@@ -648,7 +657,9 @@ static void core1_main(void) {
                 seeking = false; moved = false;
                 if (cur.screen == SCREEN_LIST) {
                     if (sy < LIST_HDR_H) {
-                        kind = (sx < 70 && list_can_back) ? K_LIST_BACK : (sx > GFX_W - 50 && cur.title[0]) ? K_LIST_NOW : K_NONE;
+                        kind = sx >= GFX_W - 46 ? K_HOME
+                             : (sx >= GFX_W - 90 && cur.title[0]) ? K_LIST_NOW
+                             : (sx < 80 && list_can_back) ? K_LIST_BACK : K_NONE;
                     } else {
                         kind = K_LIST;
                         scroll_at_press = list_scroll;
@@ -658,13 +669,15 @@ static void core1_main(void) {
                     }
                 } else if (ov_visible && sy >= OV_Y0 && sy < OV_Y0 + OV_H) {
                     kind = K_VOL_DRAG;
-                } else if (sy < SCRIM_H + 6 && sx < STATUS_TAP_W) {
-                    kind = K_STATUS;
+                } else if (sy < TOP_TAP_H && sx < (sd_mode ? 38 : STATUS_TAP_W)) {
+                    kind = K_HOME;                // house icon (phone mode: the whole left side)
+                } else if (sd_mode && sy < TOP_TAP_H && sx < 150) {
+                    kind = K_STATUS;              // "< Library"
                 } else if (sd_mode && cur.len_ms && sy >= BAR_Y - 14 && sy <= TIME_Y + 14) {
                     kind = K_SEEK;
                 } else if (sy >= BTN_Y - 26) {
                     kind = K_ZONE; zone = zone_at(sx, sy);
-                } else if (sy >= SCRIM_H + 6 && sy < TITLE_Y - 8) {
+                } else if (sy >= TOP_TAP_H && sy < TITLE_Y - 8) {
                     kind = K_ART;
                 } else {
                     kind = K_NONE;
@@ -731,7 +744,12 @@ static void core1_main(void) {
                 } else if (kind == K_ART) {
                     if (ov_visible) ov_hide(); else { ov_show(); ov_last_ms = now; }
                 } else if (kind == K_STATUS) {
-                    push_cmd(sd_mode ? POD_CMD_BACK : POD_CMD_HOME);
+                    push_cmd(POD_CMD_BACK);
+                } else if (kind == K_HOME) {
+                    push_cmd(POD_CMD_HOME);
+                    strcpy(cur.toast, "Going home\xE2\x80\xA6");   // instant feedback while the Pod restarts
+                    toast_until_ms = now + 3000;
+                    redraw_all();
                 } else if (kind == K_LIST) {
                     if (!moved && list_pressed >= 0) { mbox_list_req = list_pressed; push_cmd(POD_CMD_LIST_SELECT); }
                     list_pressed = -1;
@@ -926,7 +944,10 @@ void pod_display_boot(void) {
     ili9341_init();
     xpt2046_init();
     bool have = cal_load();
-    bool force = xpt2046_irq_active();       // finger on the screen at power-up = recalibrate
+    // Finger held on the screen for 1.5 s at power-up = recalibrate. (A quick tap while the
+    // Pod restarts after "Home" must not trigger it.)
+    bool force = xpt2046_irq_active();
+    for (int i = 0; force && i < 150; i++) { sleep_ms(10); force = xpt2046_irq_active(); }
     if (!have || force) {
         if (force) { while (xpt2046_irq_active()) sleep_ms(10); sleep_ms(200); }
         calibrate();

@@ -105,9 +105,9 @@ A quiet tone plays: left ear, right ear, both, silence, repeating.
 
 ### Step 3: Bluetooth + Poster UI → `pod.uf2`, choose **Phone**
 1. **First boot runs touch setup:** tap the 4 dots. The calibration is saved to
-   flash. To redo it later, **hold a finger on the screen while plugging in USB**.
+   flash. To redo it later, **hold a finger on the screen for 2 seconds while plugging in USB**.
 2. The **home screen** (SH logo, wallpaper, two glass buttons) asks Phone or SD card: tap **Phone**. The idle screen reads **"Waiting for phone"**.
-   Tapping **Pod** (top-left) at any time goes back to the home screen.
+   Tapping the **house icon** (top-left on Now Playing, top-right in the library) goes back to the home screen.
 3. On the iPhone, go to Settings → Bluetooth and tap **"Pod xx:xx:…"**. If you
    paired an earlier Pod build, first open it there and choose **"Forget This
    Device"**, because iOS caches the old feature list.
