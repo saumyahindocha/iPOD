@@ -18,8 +18,10 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 - Power: charger output feeds the Pico's VSYS; the power switch grounds the Pico's 3V3_EN; the Pico's 3V3 pin powers the screen, DAC and gauge. USB-C charges, the Pico's micro-USB programs
 - Same GPIOs as the breadboard, so `pod.uf2` runs unchanged
 
+- All four schematic pages drawn in EasyEDA and reviewed: Power, Pico (as two 1×20 through-hole headers J6/J7, LCSC C50981), Audio (PCM5102A, PJ-342 jack C668606 with detect on its switch contact), Screen (sockets C5307340 / C2897367, side button C530670)
+
 **Next**
-- Remove the regulator and USB protection from the Power page; draw page 2 (Pico) from the guide, Part D2
+- Export the BOM for a part check; convert to PCB and place parts using the layout in `docs/pcb-plan.md`
 
 ## 2026-10-07 (later) — Home screen, SD player, battery
 
