@@ -369,7 +369,7 @@ analog signal) and the **headphone jack**.
 | 470 Ω | 2 | |
 | 10 kΩ | 1 | |
 | 4.7 kΩ | 1 | |
-| Ferrite bead 600 Ω @ 100 MHz, **0603** | 1 | search `600R 0603 ferrite`, pick a Basic one |
+| Ferrite bead 600 Ω @ 100 MHz, **0603** | 1 | search **`C1002`** (Sunlord GZ1608D601TF, Basic) |
 
 ### A1. The DAC (U8)
 

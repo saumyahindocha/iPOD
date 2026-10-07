@@ -63,7 +63,7 @@ Prefer JLCPCB **Basic** parts for resistors and capacitors (cheaper assembly).
 | J5 | Headphone jack | CUI **SJ-43515TS-SMT-TR** (LCSC C5353507) | SMD, 4-pole + tip switch | pin 1 sleeve, 2 tip, 3 ring 1, 4 ring 2, 5 tip switch |
 | SW1 | Power/hold switch | MSK-12C02 | SPDT side slide | |
 | SW2 | Play/pause/wake | side-push SMD tactile | SMD | on the board edge |
-| FB1 | Ferrite bead | 600 Ω @ 100 MHz | 0603 | DAC analog supply |
+| FB1 | Ferrite bead | Sunlord GZ1608D601TF (LCSC C1002, Basic) | 0603 | DAC analog supply, 600 Ω @ 100 MHz |
 | — | Resistors, capacitors | values per page below | 0402 (bulk caps 0603/0805) | |
 | BT1 | Battery | 1000 mAh LiPo, 503450, protection PCB, JST-PH lead | | off-board |
 
