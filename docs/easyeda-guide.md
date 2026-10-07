@@ -425,14 +425,68 @@ Search **`C668606`** (SHOU HAN **PJ-342**). Pins, from its datasheet:
 
 ---
 
-## Part E — The other pages (same method)
+## Part D4 — Drawing Sheet 4: Screen, step by step
 
-Use the same steps: place the chip, then go through its section of the spec line by line, with
-stubs and labels. Send a PDF after each one.
+Open page **4 Screen**. This page has the two sockets the red screen module plugs into, and the
+play/pause button. The mounting holes are added later, on the board layout.
 
-| Page | What's on it | Beginner tips |
+### S1. Main screen socket (J3, 14 pins)
+
+Search **`C5307340`** (ZHOURI **PM2.54-1\*14**: 1×14 female header, 2.54 mm, 8.5 mm tall). Name it
+**J3**. Pin 1 is the module's **VCC** pin, the first one printed on the module's header.
+
+| J3 pin | Module pin | Net |
 |---|---|---|
-| **4 Screen** | the two sockets for the screen module, the play button | Use generic **1×14** and **1×4 female header, 2.54 mm** parts. Pin 1 of each socket must get the net from the spec's pin table. Mounting holes are placed on the PCB in Part G, not here. |
+| 1 | VCC | `3V3` |
+| 2 | GND | `GND` |
+| 3 | CS | `LCD_CS` |
+| 4 | RESET | `LCD_RST` |
+| 5 | DC | `LCD_DC` |
+| 6 | SDI (MOSI) | `SPI0_MOSI` |
+| 7 | SCK | `SPI0_SCK` |
+| 8 | LED | `LCD_LED` |
+| 9 | SDO (MISO) | **No Connect** (the screen doesn't let go of this line, so it stays off the shared bus) |
+| 10 | T_CLK | `SPI0_SCK` |
+| 11 | T_CS | `TOUCH_CS` |
+| 12 | T_DIN | `SPI0_MOSI` |
+| 13 | T_DO | `SPI0_MISO` |
+| 14 | T_IRQ | `TOUCH_IRQ` |
+
+Pins 7 and 10 share `SPI0_SCK`, and pins 6 and 12 share `SPI0_MOSI`. That's intended: the screen,
+touch and SD card take turns on one bus, exactly as on your breadboard.
+
+### S2. SD card socket (J4, 4 pins)
+
+Search **`C2897367`** (HCTL **PM254-1-04-Z-8.5**: 1×4 female header, 2.54 mm, 8.5 mm tall). Name it
+**J4**. Check the order printed next to the SD pins on **your** module; on the MSP2807 it is:
+
+| J4 pin | Module pin | Net |
+|---|---|---|
+| 1 | SD_CS | `SD_CS` |
+| 2 | SD_MOSI | `SPI0_MOSI` |
+| 3 | SD_MISO | `SPI0_MISO` |
+| 4 | SD_SCK | `SPI0_SCK` |
+
+If your module prints them in a different order, follow the module and tell me.
+
+### S3. Play/pause button (SW2)
+
+Search **`C530670`** (Kinghelm **KH-3635-CAJ**: a small side-push button that sits on the board edge;
+if it's out of stock, `C502303` works too).
+
+- [ ] One side of the button → `BTN_PLAY_N`
+- [ ] Other side → `GND`
+- [ ] **100 nF** (0402) from `BTN_PLAY_N` to GND, which smooths out contact bounce
+- [ ] If the symbol has 4 pins, they're joined in pairs: wire one pair to each side (check the
+      datasheet drawing, or send me a screenshot)
+
+### S4. Check and send
+
+1. **Design → Annotate**, then **Design → Check DRC**. With all four pages drawn, every label now
+   has both ends, so the "single pin net" warnings should be gone. Send me a screenshot of any
+   that remain.
+2. Send the **PDF of all four pages** and the **BOM**. After that review we move to the board
+   layout.
 
 ---
 

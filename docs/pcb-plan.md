@@ -58,11 +58,11 @@ Prefer JLCPCB **Basic** parts for resistors and capacitors (cheaper assembly).
 | U8 | Audio DAC | PCM5102APWR | TSSOP-20 | |
 | J1 | USB-C socket (charging) | HRO TYPE-C-31-M-12 | 16-pin SMD | |
 | J2 | Battery connector | JST S2B-PH-SM4-TB | PH 2.0 mm | **check your battery's polarity** |
-| J3 | Screen socket | 1×14 female header, 2.54 mm, 8.5 mm tall | THT | module's main pins |
-| J4 | SD socket | 1×4 female header, 2.54 mm, 8.5 mm tall | THT | module's SD pins |
+| J3 | Screen socket | ZHOURI PM2.54-1*14 (LCSC C5307340), 1×14 female, 2.54 mm, 8.5 mm tall | THT | module's main pins |
+| J4 | SD socket | HCTL PM254-1-04-Z-8.5 (LCSC C2897367), 1×4 female, 8.5 mm tall | THT | module's SD pins |
 | J5 | Headphone jack | SHOU HAN **PJ-342** (LCSC C668606) | SMD, 3.5 mm, two NC switches | 6 / 3 = the two springs (left / right channel), 7 / 4 = their switch contacts, 5 and 2 = ground contacts |
 | SW1 | Power/hold switch | MSK-12C02 | SPDT side slide | |
-| SW2 | Play/pause/wake | side-push SMD tactile | SMD | on the board edge |
+| SW2 | Play/pause/wake | Kinghelm KH-3635-CAJ (LCSC C530670), side-push SMD | SMD | on the board edge |
 | FB1 | Ferrite bead | Sunlord GZ1608D601TF (LCSC C1002, Basic) | 0603 | DAC analog supply, 600 Ω @ 100 MHz |
 | — | Resistors, capacitors | values per page below | 0402 (bulk caps 0603/0805) | |
 | BT1 | Battery | 1000 mAh LiPo, 503450, protection PCB, JST-PH lead | | off-board |
