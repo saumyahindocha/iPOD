@@ -570,10 +570,96 @@ Charger with its capacitors right next to its pins, gauge next to the battery co
 to the jack. Then send me a screenshot **before routing**. Placement decides most of how well the
 board works.
 
-### G7. Route (I'll walk you through this when we get there)
+### G7. Route, step by step
 
-Power tracks first (0.5 mm), then signals. Then fill the bottom layer with a solid GND copper pour
-and the top layer with GND around the parts. Run **Design → Check DRC** until it's clean.
+"Routing" means drawing the copper tracks that replace the thin blue ratsnest lines. When every
+blue line is gone and DRC shows no errors, the board is finished. Work in this order: each step
+makes the next one easier.
+
+**Two layers:** the **Top** layer holds the parts and most tracks. The **Bottom** layer will be
+almost entirely one solid sheet of ground copper. Only use the bottom layer for short hops where two
+top tracks would otherwise cross.
+
+### R1. Set the rules (once)
+
+1. **Design → Design Rule** (it may be called *Rule Settings* or *Rules Manager*).
+2. **Track width**, default rule: **0.25 mm**. **Clearance**: **0.2 mm**. **Via**: hole **0.3 mm**,
+   diameter **0.6 mm**.
+3. **Net Class**: create a class named **POWER**, add the nets `VBUS`, `VSYS`, `VBAT`, `3V3` and
+   `GND`, and give it a track width of **0.5 mm**. EasyEDA then uses the wider track automatically
+   when you route those nets.
+4. If you can't find net classes, just type the width in the toolbar or right panel while drawing
+   each power track.
+
+### R2. How to draw a track
+
+1. Select the **Top** layer in the layer bar at the bottom of the canvas.
+2. **Route → Track** (shortcut usually **W**; it's shown next to the menu item).
+3. Click on a pad, click to add corners, and click on the destination pad. Right-click or **Esc**
+   to finish. Use **45° corners**, never 90°.
+4. **To change layers in the middle of a track:** finish the track, **Place → Via** at that spot,
+   switch the layer bar to **Bottom**, and continue from the via. Afterwards, switch back to Top.
+5. **Highlight a net:** click any pad, and every pad on that net lights up. Useful to see where a
+   track has to go.
+6. **Undo** mistakes with Ctrl+Z, or click a track and press Delete.
+
+### R3. Power tracks first (0.5 mm)
+
+Click a pad of each net to highlight it, then draw:
+
+| Net | Route from → to |
+|---|---|
+| `VBUS` | USB-C VBUS pads → charger IN (U1) and its 4.7 µF → **Pico VBUS** (J1 pin 20). This one runs the length of the board. |
+| `VSYS` | charger OUT (U1, both pins) → its 10 µF → **Pico VSYS** (J1 pin 19), also the length of the board. Run it beside `VBUS`. |
+| `VBAT` | charger BAT pins (U1) → its 10 µF → battery connector CN1 pin 1 → gauge VDD and CELL (U3) |
+| `3V3` | **Pico 3V3** (J1 pin 16) → C4 → screen socket pin 1 (U4) → the DAC area (C8/C11 for CPVDD, C9/C10 for DVDD, the ferrite L1) → the pull-up resistors (R6, R7, R11–R13) |
+| `3V3_EN` | SW1 middle pin → Pico pin 37 (J1 pin 17). A signal track (0.25 mm) is fine. |
+
+**Don't route GND at all.** The copper pour in step R6 connects every GND pad.
+
+### R4. Short connections next to the chips
+
+Connect each small capacitor and resistor to the chip pin it sits beside: the charger's ISET/ILIM/
+ITERM/TS resistors, the DAC's capacitors (CAPP–CAPM, VNEG, LDOO, AVDD), the USB-C CC resistors, the
+2.2 nF and 470 Ω on the audio outputs, and the 4.7 kΩ on the jack. These are all a few millimetres
+long.
+
+### R5. Signals (0.25 mm)
+
+What's left are the long signals from the Pico to the parts at the far end:
+
+- **Screen** (`LCD_*`, `SPI0_*`, `TOUCH_*`): Pico → the 14-pin socket U4, which is close by. The
+  `SPI0_*` nets also continue to the SD socket U5 at the far end.
+- **Audio** (`I2S_BCK`, `I2S_DIN`, `I2S_LRCK`, `DAC_XSMT`, `HP_DET`) and **gauge/charger**
+  (`I2C_SDA`, `I2C_SCL`, `GAUGE_ALRT_N`, `CHG_N`, `PGOOD_N`), plus `BTN_PLAY_N`: Pico → the far end.
+
+Run the long ones as a **neat bundle down the middle of the board**, side by side, 0.25 mm wide with
+0.25 mm gaps. A single 0.25 mm track fits between two Pico header pins, if you need it.
+
+**Option: let the autorouter do the signals.** After R3 and R4 are done by hand, **Route → Auto
+Route** can draw the remaining signals. Tell it to **skip GND** (and keep your existing tracks).
+Then send me a screenshot: autorouters sometimes make messy detours that are worth fixing by hand.
+
+### R6. Ground pour (last)
+
+1. Select the **Bottom** layer. **Place → Copper Area** (also called *Copper Pour* or *Polygon
+   Pour*), **net GND**, and draw a rectangle around the whole board.
+2. Do the same on the **Top** layer, net GND.
+3. EasyEDA fills every empty space with ground and connects all the GND pads to it. If it doesn't
+   refill automatically, use **Rebuild Copper Areas** (or press **Shift+B**).
+4. Add a few **vias** (Place → Via, net GND) around the board, especially near the charger, the DAC
+   and the Pico GND pins. They join the top and bottom ground together.
+5. **Keep the antenna notch area clear:** place a **Prohibited Region / Keep-out** on both layers,
+   covering the notch plus about 2 mm around it, so the pour stays away from the antenna.
+
+### R7. Check
+
+1. **Design → Check DRC** until the list is empty. "Connection Error" means a track is missing;
+   "Clearance" means two things are too close.
+2. Look at the board in **3D**.
+3. Send me a screenshot of the routed board (top and bottom layers), the DRC result, and a PDF
+   export. I'll check it before you order.
+
 
 ---
 
