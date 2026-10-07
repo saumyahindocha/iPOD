@@ -209,7 +209,7 @@ nine of its pins get a part.
 - [ ] **OUT** → `VSYS`, and C2 **10 µF** from OUT to GND
 - [ ] **BAT** → `VBAT`, and C3 **10 µF** from BAT to GND
 - [ ] **ISET** → R4 **1.8 kΩ** → GND (sets about 0.5 A charging)
-- [ ] **ILIM** → R5 **1.1 kΩ** → GND (sets the 1.46 A input limit)
+- [ ] **ILIM** → R5 **1.2 kΩ** → GND (sets the 1.34 A input limit)
 - [ ] **ITERM** → R6 **3.0 kΩ** → GND (charging stops at 50 mA)
 - [ ] **TS** → R3 **10 kΩ** → GND
 - [ ] **EN2** → `VBUS`

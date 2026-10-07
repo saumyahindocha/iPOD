@@ -78,7 +78,7 @@ jlcpcb.com/parts and put its LCSC number in the part's `LCSC` field in KiCad.
 - OUT → `VSYS`, with C2 **10 µF** to GND. *(Runs the Pod from USB while the cell charges separately.)*
 - BAT → `VBAT`, with C3 **10 µF** to GND.
 - ISET → R4 **1.8 kΩ** → GND → charge current = 890 / 1800 ≈ **0.49 A** (about 0.5 C for 1000 mAh; 1.8 kΩ is a standard value, so a JLCPCB Basic part).
-- ILIM → R5 **1.1 kΩ** → GND → input limit = 1610 / 1100 ≈ **1.46 A**.
+- ILIM → R5 **1.2 kΩ** → GND → input limit = 1610 / 1200 ≈ **1.34 A** (enough for 0.5 A charging + the Pod running; 1.0 kΩ would exceed the 1.5 A maximum).
 - EN2 → `VBUS`, EN1 → GND → "input limit set by ILIM resistor".
 - CE → GND (charging always enabled). SYSOFF → GND. TMR → leave open (default safety timers).
 - ITERM → R6 **3.0 kΩ** → GND → charge ends at 0.03 × 3000 / 1800 ≈ **50 mA**.
