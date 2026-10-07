@@ -1,5 +1,5 @@
 (kicad_sch (version 20230121) (generator eeschema)
-  (uuid e5d1f1b3-2550-4fe0-ae47-88d8f881c123)
+  (uuid a8046358-448e-4f41-ba10-86835dc00f26)
   (paper "A3")
   (title_block
     (title "Pod Rev A — Audio")
@@ -15,6 +15,6 @@
     (stroke (width 0) (type default))
     (fill (type none))
     (effects (font (size 1.4 1.4)) (justify left top))
-    (uuid 634cb549-f392-4ba1-b002-45ab62b68f79)
+    (uuid d3d7465a-1d7d-4160-a1ed-0b74a6065141)
   )
 )

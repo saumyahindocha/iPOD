@@ -1,5 +1,5 @@
 (kicad_sch (version 20230121) (generator eeschema)
-  (uuid 5966a88f-d3da-4dab-9e38-b439daa41183)
+  (uuid df2dec14-be1b-4704-b8e1-b3e3fe217a65)
   (paper "A3")
   (title_block
     (title "Pod Rev A — MCU")
@@ -15,6 +15,6 @@
     (stroke (width 0) (type default))
     (fill (type none))
     (effects (font (size 1.4 1.4)) (justify left top))
-    (uuid 018cc8c8-d793-466b-bea3-8c0bb5349ff2)
+    (uuid 9c92967b-000c-4a92-8615-dc5a4107c645)
   )
 )

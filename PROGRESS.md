@@ -17,11 +17,13 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 **PCB Rev A decisions**
 - RP2350A chip + Raspberry Pi RM2 radio on our own board; keep the 2.8" resistive screen module, plugged into sockets; 1000 mAh LiPo (503450); play/pause/wake button + power/hold slide switch
 - Everything else on the board: USB-C + BQ24074 charger with power path, MAX17048 gauge, TPS63802 3.3 V buck-boost, PCM5102A DAC + jack, 16 MB flash, 8 MB PSRAM
-- Board 50 × 94 mm (module footprint + 8 mm antenna tab so the screen doesn't block Bluetooth); Pod about 55 × 100 × 20 mm
+- Board 50 × 94 mm (module footprint + 8 mm antenna tab so the screen doesn't block Bluetooth)
+- Screen module measured from a photo (holes, header and SD holder positions); print-out check template in `docs/screen_template_1to1.pdf`
+- The module's SD holder sits in the gap under it, so the 1000 mAh battery moved to the underside of our board; Pod about 55 × 100 × 24 mm
 - Spec with every connection in `docs/pcb-plan.md`; KiCad project started in `hardware/pod-pcb` (five sheets with checklists, 4-layer board outline, rules)
 
 **Next**
-- Measure the screen module (outline, holes, header positions) and fix the board outline
+- Print the 1:1 template and check it against the module
 - Draw Sheet 1 (Power) in KiCad, push for review
 - Wire the SD header (CS GP7, SCK GP18, MOSI GP19, MISO GP20), test SD mode
 

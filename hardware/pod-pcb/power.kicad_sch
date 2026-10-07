@@ -1,5 +1,5 @@
 (kicad_sch (version 20230121) (generator eeschema)
-  (uuid d5af9f56-78fe-4f47-9d3d-ab8ffeef8a77)
+  (uuid 81609f64-0722-4274-b398-6fce741502eb)
   (paper "A3")
   (title_block
     (title "Pod Rev A — Power")
@@ -15,6 +15,6 @@
     (stroke (width 0) (type default))
     (fill (type none))
     (effects (font (size 1.4 1.4)) (justify left top))
-    (uuid 8f1216e4-d13a-4a48-b649-1d4e524ffef8)
+    (uuid 4967cffe-ec1b-4c23-9876-8b599593ad54)
   )
 )

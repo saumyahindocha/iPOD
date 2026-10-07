@@ -149,6 +149,9 @@ draw += [rect((hx0, hy0), (hx1, hy1), 'Dwgs.User'),
          text('USB-C', (X0 + 9, y1 - 1.2), size=0.7),
          text('jack', (X0 + 38, y1 - 1.2), size=0.7),
          text('<- SW1, SW2 on this edge', (X0 + 1.0, my + 66), size=0.7),
+         rect((X0 + 8, my + 18), (X0 + 42, my + 68), 'B.Fab'),
+         text('UNDERSIDE: battery 503450 (34 x 50 x 5), foam tape', (X0 + 9, my + 21), layer='B.Fab', size=0.8),
+         text('J2 + lead notch', (X0 + 1.0, my + 60), size=0.7),
          '  (gr_line (start %s %s) (end %s %s) (stroke (width 0.3) (type default)) (layer "Dwgs.User") (tstamp %s))' % (X0, y1 + 6, X0 + 50, y1 + 6, U()),
          text('this bar must measure exactly 50 mm on paper', (X0, y1 + 8.5), size=1.0)]
 keepout = ('  (zone (net 0) (net_name "") (layers "*.Cu") (tstamp %s) (name "RM2 antenna keep-out") (hatch edge 0.5)\n'

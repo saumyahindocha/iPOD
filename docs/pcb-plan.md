@@ -11,15 +11,16 @@ with every connection written out. The KiCad project lives in `hardware/pod-pcb/
 | 1 | Main chip | **RP2350A chip + Raspberry Pi RM2 radio module**, all on our board |
 | 2 | Screen | **Keep the 2.8" 240×320 resistive module** (ILI9341 + XPT2046 + microSD slot) |
 | 3 | Screen mounting | **The red module plugs into sockets on our PCB** (no new screen to buy) |
-| 4 | Battery | **1000 mAh single-cell LiPo, ~5 mm thick** (503450 size, with protection board) |
+| 4 | Battery | **1000 mAh single-cell LiPo, ~5 mm thick** (503450 size, with protection board), **mounted on the underside of our board** |
 | 5 | Controls | **Play/pause + wake button** and an **iPod-style power/hold slide switch** |
 
 Everything else (USB-C charging, power path, fuel gauge, 3.3 V regulator, DAC, headphone jack,
 16 MB flash, 8 MB PSRAM) is on our board too.
 
-**Size:** about **55 × 100 × 20 mm**. The board is the module's 86 × 50 mm footprint plus an 8 mm
-"antenna tab" at the top (see Layout). The module sits on 8.5 mm sockets; the battery fits in that
-gap beside the electronics, which keeps the Pod about 20 mm thick.
+**Size:** about **55 × 100 × 24 mm**. The board is the module's 86 × 50 mm footprint plus an 8 mm
+"antenna tab" at the top (see Layout). The module sits on 8.5 mm sockets above our board; the gap
+holds our electronics and the module's own microSD holder. The battery is stuck to the **underside**
+of our board (it no longer fits in the gap beside the SD holder; decided 7 Oct 2026).
 
 ## Firmware compatibility
 
@@ -48,7 +49,7 @@ jlcpcb.com/parts and put its LCSC number in the part's `LCSC` field in KiCad.
 | U8 | Audio DAC | PCM5102APWR | TSSOP-20 | |
 | U1 | USB ESD | USBLC6-2SC6 | SOT-23-6 | |
 | J1 | USB-C socket | GCT USB4105-GF-A (or HRO TYPE-C-31-M-12) | 16-pin SMD | |
-| J2 | Battery connector | JST S2B-PH-SM4-TB | PH 2.0 mm | **check your battery's polarity** |
+| J2 | Battery connector | JST S2B-PH-SM4-TB | PH 2.0 mm | top side at the left edge, next to the battery-lead notch; **check your battery's polarity** |
 | J3 | Screen socket | 1×14 female header, 2.54 mm, 8.5 mm tall | THT | module's main pins |
 | J4 | SD socket | 1×4 female header, 2.54 mm, 8.5 mm tall | THT | module's SD pins |
 | J5 | Headphone jack | CUI SJ-43514-SMT-TR | SMD, with detect switch | |
@@ -206,31 +207,32 @@ the sockets, hold the module firmly so the sockets don't carry the screen's weig
 ## Layout
 
 ```
-          50 mm
+          50 mm          (top view of our board, module above it)
    ┌──────────────────┐ ─┐
    │  RM2 + antenna   │  │ 8 mm antenna tab: no copper under the antenna,
    │  ░░░keep-out░░░  │  │ nothing above it (it sticks out past the screen module)
    ├──────────────────┤ ─┤
-   │  ○            ○  │  │
-   │   J3 (14-pin)    │  │ Screen module plugs in here (86 × 50 mm)
-   │ ┌──────────────┐ │  │
-   │ │   BATTERY    │ │  │ Battery sits in the 8.5 mm gap under the module
-   │ │  34 × 50 mm  │ │  │ (top side of our board, held with foam tape)
-   │ └──────────────┘ │  │
-   │ RP2350 flash     │  │ Electronics on the top side beside the battery,
-   │ PSRAM  BQ24074   │  │ all under ~4 mm so they clear the module
-   │ TPS63802  DAC    │  │
-   │  ○   J4 (SD)  ○  │  │
-   └──[USB-C][jack]───┘ ─┘ Bottom edge: USB-C, headphone jack; right edge: SW1, SW2
+   │ ⊕   J3 14-pin  ⊕ │  │ J3 pin 1 (VCC) on the RIGHT (module faces down onto us)
+   │                  │  │
+   │ RP2350  flash    │  │ Electronics on the top side, in the 8.5 mm gap,
+   │ PSRAM            │  │ all under ~4 mm tall
+   │ BQ24074 TPS63802 │┌─┤
+   │ MAX17048 DAC     ││ │ Module's SD holder hangs down here: keep clear;
+   │J2⊓ (lead notch)  │└─┤ the card goes in from the RIGHT edge
+   │                  │  │
+   │ ⊕   J4 SD 4-pin ⊕│  │
+   └──[USB-C]──[jack]─┘ ─┘ Bottom edge: USB-C (left), jack (right); left edge: SW1, SW2
+   Underside: 1000 mAh battery (34 × 50 × 5 mm), foam tape, lead through the notch to J2
                          94 mm total
 ```
 
 - **Why the antenna tab:** the screen module's copper directly above the RM2 would block Bluetooth.
   The tab puts the antenna beyond the module, so range stays like the Pico 2 W's.
 - **4 layers, 0.8 mm:** layer 1 signals + parts, layer 2 solid GND, layer 3 3V3/VSYS power,
-  layer 4 signals. The bottom side stays flat (no parts), so the Pod sits flush in the case.
-- **Keep the area under the module's microSD slot clear** (no battery, no tall parts) so the card
-  can slide in from the module's edge.
+  layer 4 signals. The bottom side has **no parts** (only the battery stuck on with foam tape),
+  so JLCPCB assembles one side only. No test pads or vias under the battery's sharp edges.
+- **Keep the area under the module's microSD holder clear** (no tall parts) so the holder fits and the
+  card can slide in from the right edge.
 - **Module measurements (from the photo, 7 Oct 2026; confirm with `docs/screen_template_1to1.pdf`):**
   back view, mm from the module's top-left corner with the header along the top: holes at
   (2.7, 6.9), (47.3, 6.9), (2.7, 83.0), (47.3, 83.0), about 3 mm diameter, so use M2.5 standoffs;
@@ -281,8 +283,9 @@ the sockets, hold the module firmly so the sockets don't carry the screen's weig
 ## Enclosure (after the PCB)
 
 1. Import the board's STEP file, the screen module and battery into Fusion 360.
-2. Front bezel holds the module's glass; back shell holds the board; four M2 screws or snap fits.
-3. Openings: USB-C and jack (bottom), SW1 and SW2 (side), and a slot at the module's SD end so the
-   microSD card can go in and out (the card slot is on the module's underside, at that edge).
+2. Front bezel holds the module's glass; back shell holds the board with the battery underneath
+   (leave ~0.5 mm around the cell for swelling); four M2 screws or snap fits.
+3. Openings: USB-C and jack (bottom), SW1 and SW2 (left side), and a microSD slot on the right side
+   at the height of the module's SD holder.
 4. Plastic over the antenna tab (no metal paint or inserts there). PETG or resin prints first,
    then a nicer final print.
