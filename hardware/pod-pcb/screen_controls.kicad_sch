@@ -1,5 +1,5 @@
 (kicad_sch (version 20230121) (generator eeschema)
-  (uuid 64d8f27e-1c0e-4bd4-9be8-bd8eea966ff5)
+  (uuid 2dbc3cdd-d7df-4eb5-8f06-1849a45b2b67)
   (paper "A3")
   (title_block
     (title "Pod Rev A — Screen and controls")
@@ -15,6 +15,6 @@
     (stroke (width 0) (type default))
     (fill (type none))
     (effects (font (size 1.4 1.4)) (justify left top))
-    (uuid f2583917-8b2b-4a02-9d7a-22a86ff70f8f)
+    (uuid 8ca30e63-fe61-48d3-856f-522667f22e8f)
   )
 )

@@ -198,7 +198,7 @@ SD_MISO → `SPI0_MISO`, SD_SCK → `SPI0_SCK`. Match the pin order printed next
 
 **SW2 play/pause/wake** — one side → `BTN_PLAY_N` (GP6, internal pull-up), other side → GND; 100 nF across it.
 
-**Mounting** — four M3 holes matching the module's corner holes; M3 nylon standoffs, the same height as
+**Mounting** — four M2.5 holes matching the module's corner holes; M2.5 nylon standoffs, the same height as
 the sockets, hold the module firmly so the sockets don't carry the screen's weight.
 
 ---
@@ -231,6 +231,13 @@ the sockets, hold the module firmly so the sockets don't carry the screen's weig
   layer 4 signals. The bottom side stays flat (no parts), so the Pod sits flush in the case.
 - **Keep the area under the module's microSD slot clear** (no battery, no tall parts) so the card
   can slide in from the module's edge.
+- **Module measurements (from the photo, 7 Oct 2026; confirm with `docs/screen_template_1to1.pdf`):**
+  back view, mm from the module's top-left corner with the header along the top: holes at
+  (2.7, 6.9), (47.3, 6.9), (2.7, 83.0), (47.3, 83.0), about 3 mm diameter, so use M2.5 standoffs;
+  J3 pin 1 (VCC) at (6.0, 2.0), then every 2.54 mm to the right; J4 pin 1 (SD_CS) at (21.19, 82.9),
+  centred; SD card holder on the module's back at x 0–18, y 32.5–60.8, with the card entering from that
+  long edge. On our board everything is mirrored (the module faces down onto it), so J3 pin 1 is on
+  the right and the card slot is on the right-hand long edge.
 - **Measure your module before drawing the outline:** outline, the four hole centres, and the
   positions of the 14-pin and 4-pin headers (calipers, or a photo against a ruler). The board must
   match them exactly.
