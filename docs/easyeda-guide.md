@@ -290,17 +290,19 @@ already on the Pico, so this page is just the Pico and a label on each pin.
 **First, tidy the pages:** right-click **2. MCU** → **Rename** → `2. Pico`. Right-click
 **3. Radio** → **Delete**. Rename the last two to `3. Audio` and `4. Screen`.
 
-### P1. Place the Pico
+### P1. Place the Pico (as two 20-pin headers)
 
-1. In the library, search `Pico 2 W`. If nothing fits, try `Pico W`, then `RPI-PICO`. The Pico,
-   Pico W, Pico 2 and Pico 2 W have the **same 40-pin layout and size**, so any of them works.
-2. Check the footprint preview (bottom-right of the library panel):
-   - **40 pads in two rows, 17.78 mm apart, 2.54 mm pitch**, outline about 51 × 21 mm.
-   - Your Pico has **pin headers soldered on** (it was on the breadboard), so the pads must be
-     **holes** (round, about 1 mm). A footprint with both holes and half-moon edge pads also works.
-3. Place it, then select it and switch off **Add into BOM** (or similar) in the right panel.
-   JLCPCB mustn't try to supply it; you solder your own.
-4. If the library has no usable Pico, send me a screenshot of what you find and I'll pick one.
+EasyEDA's Pico parts only have flat surface pads, and your Pico has header pins that need holes.
+So the Pico is drawn as **two straight 1×20, 2.54 mm through-hole headers**:
+
+1. Search `1x20 2.54` and pick a straight through-hole single-row 20-pin header (footprint name like
+   `HDR-TH_20P-P2.54-V…`). Place it twice and name them **J6** and **J7**.
+2. Set **Add into BOM → No** on both (they're only holes for the Pico's own pins).
+3. Add a text note: "J6 = Pico pins 1–20, J7 = Pico pins 21–40".
+4. **J6 pin n = Pico pin n. J7 pin n = Pico pin 20 + n.** Label them from the tables below using
+   the Pico pin numbers.
+5. On the board: J6 pin 1 at (1.87, 20.39) running right; J7 pin 1 at (50.13, 2.61) running left
+   (rows 17.78 mm apart, matching the Pico).
 
 ### P2. Power pins
 

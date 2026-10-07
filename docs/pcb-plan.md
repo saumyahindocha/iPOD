@@ -52,7 +52,7 @@ Prefer JLCPCB **Basic** parts for resistors and capacitors (cheaper assembly).
 
 | Ref | Part | MPN (example) | Package | Notes |
 |---|---|---|---|---|
-| U1 | **Raspberry Pi Pico 2 W** | — (Ash's own) | 51 × 21 mm module | hand-soldered; not JLCPCB-assembled |
+| U1 | **Raspberry Pi Pico 2 W** | — (Ash's own) | 51 × 21 mm module | hand-soldered through its pin headers; drawn as two 1×20 2.54 mm TH headers **J6** (Pico pins 1–20) and **J7** (pins 21–40, J7 pin n = Pico pin 20 + n), not in the BOM |
 | U2 | Charger + power path | BQ24074RGTR | VQFN-16 3×3 | |
 | U3 | Fuel gauge | MAX17048G+T10 | TDFN-8 2×2 | firmware already supports it |
 | U8 | Audio DAC | PCM5102APWR | TSSOP-20 | |
@@ -196,7 +196,7 @@ down onto our board.
 |---|---|
 | Board outline | 52 × 109 mm, 3 mm corner radius |
 | **Antenna cut-out** | notch in the right edge, **x 42.5–52, y 4.5–18.5** (9 × 14 mm, open to the edge). No copper on any layer within 2 mm of it |
-| **Pico 2 W** | centre (26.0, 11.5); USB end flush with the **left** edge; pin 1 bottom-left at (1.87, 20.39), pin 40 top-left at (1.87, 2.61) |
+| **Pico 2 W** (J6 + J7) | centre (26.0, 11.5); USB end at the **left** edge. **J6** pin 1 (Pico pin 1) at (1.87, 20.39), pins running right to (50.13, 20.39). **J7** pin 1 (Pico pin 21) at (50.13, 2.61), pins running left to (1.87, 2.61) |
 | M2.5 holes (2.7 mm) | (3.7, 29.9), (48.3, 29.9), (3.7, 106.0), (48.3, 106.0) |
 | J3 14-pin socket | pin 1 (VCC) at **(45.0, 25.0)**; pins 2–14 every 2.54 mm to the **left** (pin 14 at 12.0) |
 | J4 4-pin SD socket | pin 1 (SD_CS) at **(29.8, 105.9)**; pins 2–4 to the left (pin 4 at 22.2) |
