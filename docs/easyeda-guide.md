@@ -61,12 +61,12 @@ crosses a pin is not connected.
 3. The left panel shows the project tree: a **Board**, containing a **Schematic** and a **PCB**.
    The Schematic can hold several **pages**.
 
-### B3. Make the 5 pages
+### B3. Make the 4 pages
 
 1. In the left panel, right-click the schematic → **New Schematic** / **New Page** (EasyEDA calls
-   them "schematic pages"). Make 5 pages in total.
-2. Right-click each page → **Rename**: `1 Power`, `2 MCU`, `3 Radio`, `4 Audio`, `5 Screen`.
-3. All five pages belong to **one** schematic, so a net named `3V3` on page 1 is the same net as
+   them "schematic pages"). Make 4 pages in total.
+2. Right-click each page → **Rename**: `1 Power`, `2 Pico`, `3 Audio`, `4 Screen`.
+3. All four pages belong to **one** schematic, so a net named `3V3` on page 1 is the same net as
    `3V3` on page 2. We'll confirm this later when the PCB shows every part linked up.
 
 ### B4. Learn the editor (try each of these once on a blank page)
@@ -153,7 +153,7 @@ Flag** and click the pin end. This tells ERC the pin was left open on purpose.
 
 ### C6. The exposed pad
 
-Several chips (BQ24074, TPS63802, MAX17048) have a metal pad underneath, shown as an extra pin
+Several chips (BQ24074, MAX17048) have a metal pad underneath, shown as an extra pin
 named **EP**, **PAD**, **PowerPAD** or **thermal pad**. Connect it to **GND** unless the spec says
 otherwise.
 
@@ -161,8 +161,8 @@ otherwise.
 
 ## Part D — Drawing Sheet 1: Power, step by step
 
-Open page **1 Power**. Draw it in five groups from left to right, as the power flows:
-**USB-C → protection → charger → switch and regulator → fuel gauge.** Leave space between the
+Open page **1 Power**. Draw it in four groups from left to right, as the power flows:
+**USB-C → charger and battery → power switch → fuel gauge.** Leave space between the
 groups.
 
 Tick each line as you draw it. When a chip's pin name in EasyEDA differs from the spec, match by
@@ -181,26 +181,13 @@ Some symbols join pins with the same job into one pin, labelled for example `A4B
 - [ ] All **GND** pins (A1, A12, B1, B12) and the **shell / SHIELD / EH** pins → `GND`
 - [ ] **CC1** (A5) → R1 **5.1 kΩ** → GND
 - [ ] **CC2** (B5) → R2 **5.1 kΩ** → GND (one resistor each; never share one)
-- [ ] **D+** (A6 *and* B6) → label `USB_DP_C`
-- [ ] **D−** (A7 *and* B7) → label `USB_DM_C`
-- [ ] **SBU1**, **SBU2** → No Connect flag
+- [ ] **D+** (A6, B6), **D−** (A7, B7), **SBU1**, **SBU2** → No Connect flag. The USB-C socket
+      only charges; programming goes through the Pico's own micro-USB.
 
 *Why the CC resistors:* a USB-C charger outputs 0 V until it sees 5.1 kΩ on CC. Leaving them out
 is the most common USB-C mistake.
 
-### D2. USB protection (U1)
-
-Search `USBLC6-2SC6`. It has 6 pins.
-
-- [ ] Both **I/O1** pins (1 and 6) → `USB_DP_C`
-- [ ] Both **I/O2** pins (3 and 4) → `USB_DM_C`
-- [ ] **VBUS** (pin 5) → `VBUS`
-- [ ] **GND** (pin 2) → `GND`
-
-The MCU sheet will later connect `USB_DP_C` / `USB_DM_C` to the RP2350's USB pins through 27 Ω
-resistors. That's not part of this sheet.
-
-### D3. Charger (U2)
+### D2. Charger (U2)
 
 Search `BQ24074RGTR` (VQFN-16). Put it in the middle of the page with room around it, because
 nine of its pins get a part.
@@ -225,7 +212,7 @@ nine of its pins get a part.
 and its bottom pin goes to a stub labelled `CHG_N`. A third stub labelled `CHG_N` sits on the chip
 pin. All three are now correctly joined, with no long wires.
 
-### D4. Battery connector (J2)
+### D3. Battery connector (J2)
 
 Search `S2B-PH-SM4-TB` (JST-PH, 2 pins, side-entry SMD).
 
@@ -235,36 +222,18 @@ Search `S2B-PH-SM4-TB` (JST-PH, 2 pins, side-entry SMD).
 On the page, put a text note next to it: **"check battery polarity"**: **Place → Text**. LiPo
 cells come wired either way round. Plugging in a reversed one destroys the charger.
 
-### D5. Power/hold switch (SW1)
+### D4. Power/hold switch (SW1)
 
 Search `MSK-12C02`. It has three main pins: one in the middle (common) and one at each side, plus
 mounting pins.
 
-- [ ] **Middle (common)** → label `REG_EN`
-- [ ] **One side** (ON) → `VSYS`
-- [ ] **Other side** (OFF) → `GND`
+- [ ] **Middle (common)** → label `3V3_EN`
+- [ ] **One side** (OFF) → `GND`
+- [ ] **Other side** (ON) → No Connect flag. The Pico holds 3V3_EN high by itself, so "on" just
+      means "not grounded".
 - [ ] Mounting/shell pins → GND (or No Connect)
 
-### D6. 3.3 V regulator (U4) and its inductor (L1)
-
-Search `TPS63802DLAR` (VSON-10) and `XFL4015-471MEC`. If that inductor isn't stocked, search
-`0.47uH 4x4` and pick one rated **3 A or more**.
-
-- [ ] **VIN** → `VSYS`, and C5 **10 µF** from VIN to GND
-- [ ] **EN** → `REG_EN`
-- [ ] **L1** pin of the chip → one end of the inductor L1
-- [ ] **L2** pin of the chip → the other end of L1
-- [ ] **VOUT** → `3V3`, with C6 **22 µF** and C7 **22 µF** from `3V3` to GND
-- [ ] R12 **56 kΩ** from **VOUT** to **FB**
-- [ ] R13 **10 kΩ** from **FB** to GND (with R12, this sets 3.30 V)
-- [ ] **MODE** → GND
-- [ ] **PG** → label `REG_PG`, and R14 **100 kΩ** from `REG_PG` to `3V3`
-- [ ] **GND**, **AGND** and the exposed pad → GND
-
-**Draw the FB divider with real wires, not labels:** VOUT → R12 → a junction → R13 → GND, with a
-wire from the junction to FB. It's easier to read and check.
-
-### D7. Fuel gauge (U3)
+### D5. Fuel gauge (U3)
 
 Search `MAX17048G+T10` (TDFN-8).
 
@@ -275,20 +244,20 @@ Search `MAX17048G+T10` (TDFN-8).
 - [ ] **SCL** → label `I2C_SCL`, with R10 **4.7 kΩ** to `3V3`
 - [ ] **ALRT** → label `GAUGE_ALRT_N`, with R11 **10 kΩ** to `3V3`
 
-Labels like `CHG_N`, `PGOOD_N`, `REG_PG`, `I2C_SDA`, `I2C_SCL` and `GAUGE_ALRT_N` go nowhere on
-this page. That's expected: they connect to the RP2350 on page 2.
+Labels like `CHG_N`, `PGOOD_N`, `I2C_SDA`, `I2C_SCL`, `GAUGE_ALRT_N`, `VSYS`, `3V3` and `3V3_EN`
+go nowhere on this page. That's expected: they connect to the Pico on page 2.
 
-### D8. Tidy up
+### D6. Tidy up
 
 1. **Designators:** if numbers are messy or duplicated, run **Design → Annotate** (the wording
-   might be "Annotate Designator"). Then compare R1–R14 and C1–C7 with the spec. Matching the
+   might be "Annotate Designator"). Then compare the resistors and capacitors with the spec. Matching the
    spec's numbers makes my review faster, but it isn't essential: I check by connection.
 2. **Values visible:** every resistor and capacitor should show its value on the page. If one
    doesn't, select it and switch on the value in the right panel.
 3. **Text notes:** add a title at the top of the page: **Place → Text** → "Power: USB-C,
-   charger, 3.3 V regulator, fuel gauge".
+   charger, battery, power switch, fuel gauge".
 
-### D9. Check it
+### D7. Check it
 
 1. **Design → Check DRC** (for a schematic this runs the electrical check, ERC). Results show in
    the bottom panel. Click a result to jump to it.
@@ -303,7 +272,7 @@ this page. That's expected: they connect to the RP2350 on page 2.
 
 3. **Ctrl+S.**
 
-### D10. Send it to me
+### D8. Send it to me
 
 1. **Export → PDF/Image** (in some versions under **File → Export**). Choose **PDF**, select
    **all pages** (or only page 1 for now), and use **colour** if offered.
@@ -313,217 +282,150 @@ this page. That's expected: they connect to the RP2350 on page 2.
 
 ---
 
-## Part D2 — Drawing Sheet 2: MCU, step by step
+## Part D2 — Drawing Sheet 2: the Pico 2 W
 
-Open page **2 MCU**. This follows Raspberry Pi's own **RP2350 minimal design** (from their
-*Hardware design with RP2350* guide), plus our PSRAM and GPIO labels. The RP2350 has 60 pins, so
-work **by pin name**: every pin on the symbol is named, and the names below match them.
+The board carries your own Pico 2 W, soldered on. Its chip, flash, radio and 3.3 V regulator are
+already on the Pico, so this page is just the Pico and a label on each pin.
 
-**Capacitors on this page:** 100 nF **0402**, 4.7 µF **0402** (rated **6.3 V or more**), 15 pF
-**0402** (type C0G / NP0). All are Basic parts.
+**First, tidy the pages:** right-click **2. MCU** → **Rename** → `2. Pico`. Right-click
+**3. Radio** → **Delete**. Rename the last two to `3. Audio` and `4. Screen`.
 
-### M1. Place the chip
+### P1. Place the Pico
 
-Search `RP2350A` (LCSC **C42411118**). It must be **QFN-60**; the RP2350**B** is a different,
-larger chip. Put it in the middle of the page. Draw each group below around the side of the chip
-where its pins are.
+1. In the library, search `Pico 2 W`. If nothing fits, try `Pico W`, then `RPI-PICO`. The Pico,
+   Pico W, Pico 2 and Pico 2 W have the **same 40-pin layout and size**, so any of them works.
+2. Check the footprint preview (bottom-right of the library panel):
+   - **40 pads in two rows, 17.78 mm apart, 2.54 mm pitch**, outline about 51 × 21 mm.
+   - Your Pico has **pin headers soldered on** (it was on the breadboard), so the pads must be
+     **holes** (round, about 1 mm). A footprint with both holes and half-moon edge pads also works.
+3. Place it, then select it and switch off **Add into BOM** (or similar) in the right panel.
+   JLCPCB mustn't try to supply it; you solder your own.
+4. If the library has no usable Pico, send me a screenshot of what you find and I'll pick one.
 
-### M2. Supply pins (3.3 V side)
+### P2. Power pins
 
-- [ ] **Every pin named `IOVDD`** → `3V3`, with its **own 100 nF** to GND. There are several
-      IOVDD pins, so place one capacitor per pin.
-- [ ] **QSPI_IOVDD** → `3V3`, 100 nF to GND
-- [ ] **USB_OTP_VDD** → `3V3`, 100 nF to GND
-- [ ] **ADC_AVDD** → `3V3`, 100 nF to GND
-- [ ] The **GND** pin(s) and the exposed pad → `GND`
-- [ ] **TESTEN** (if your symbol has it) → `GND`
+- [ ] **VSYS** (pin 39) → `VSYS`
+- [ ] **VBUS** (pin 40) → `VBUS`
+- [ ] **3V3** (pin 36, "3V3(OUT)") → `3V3`, with a **10 µF 0603** capacitor from `3V3` to GND
+- [ ] **3V3_EN** (pin 37) → `3V3_EN`
+- [ ] **Every GND pin** (3, 8, 13, 18, 23, 28, 38) and **AGND** (33) → `GND`
 
-### M3. The chip's built-in 1.1 V regulator
+### P3. GPIO labels
 
-The RP2350 makes its own 1.1 V core supply. Name that net `1V1`.
+One short stub and label on each pin. The names must match exactly, because they join the Pico to
+the other pages.
 
-- [ ] **VREG_VIN** → `3V3`, with **4.7 µF** to GND
-- [ ] **VREG_AVDD** → resistor **33 Ω** → `3V3`, with **4.7 µF** from VREG_AVDD to GND. The
-      resistor and capacitor filter the regulator's supply.
-- [ ] **VREG_LX** → inductor **3.3 µH** → `1V1`. Use the exact part Raspberry Pi specifies:
-      search `AOTA-B201610S3R3-101-T` (2016 size). It has a dot on one end, and the orientation
-      matters. Draw it either way round for now; I'll tell you which end goes where during layout.
-- [ ] **VREG_FB** → `1V1`
-- [ ] **VREG_PGND** → `GND`
-- [ ] **4.7 µF** from `1V1` to GND (the regulator's output capacitor)
-- [ ] **Every pin named `DVDD`** → `1V1`, each with its **own 100 nF** to GND
+| Pin | Pico | Label | | Pin | Pico | Label |
+|---|---|---|---|---|---|---|
+| 2 | GP1 | `HP_DET` | | 21 | GP16 | `LCD_DC` |
+| 4 | GP2 | `GAUGE_ALRT_N` | | 22 | GP17 | `LCD_CS` |
+| 6 | GP4 | `I2C_SDA` | | 24 | GP18 | `SPI0_SCK` |
+| 7 | GP5 | `I2C_SCL` | | 25 | GP19 | `SPI0_MOSI` |
+| 9 | GP6 | `BTN_PLAY_N` | | 26 | GP20 | `SPI0_MISO` |
+| 10 | GP7 | `SD_CS` | | 27 | GP21 | `LCD_RST` |
+| 12 | GP9 | `I2S_DIN` | | 29 | GP22 | `TOUCH_CS` |
+| 14 | GP10 | `I2S_BCK` | | 31 | GP26 | `TOUCH_IRQ` |
+| 15 | GP11 | `I2S_LRCK` | | 32 | GP27 | `PGOOD_N` |
+| 16 | GP12 | `DAC_XSMT` | | 34 | GP28 | `CHG_N` |
+| 17 | GP13 | `LCD_LED` | | | | |
 
-### M4. Crystal (12 MHz)
+These are the same pins your breadboard uses, so the firmware runs unchanged.
 
-Search `ABM8-272-T3` (3.2 × 2.5 mm, 4 pins). Pins 1 and 3 are the crystal; pins 2 and 4 are its
-metal lid.
+### P4. Unused pins
 
-- [ ] **XIN** → crystal pin 1
-- [ ] **XOUT** → resistor **1 kΩ** → crystal pin 3
-- [ ] Crystal pin 1 → **15 pF** → GND
-- [ ] Crystal pin 3 → **15 pF** → GND
-- [ ] Crystal pins 2 and 4 → GND
+- [ ] No Connect flag on **GP0** (1), **GP3** (5), **GP8** (11), **GP14** (19), **GP15** (20),
+      **RUN** (30), **ADC_VREF** (35), and the 3 debug pins (SWCLK, GND, SWDIO) if the symbol
+      has them.
 
-### M5. Flash (16 MB) and PSRAM (8 MB)
+### P5. Check and send
 
-The two chips have the **same pinout** and share every wire except chip-select.
-
-Search `W25Q128JVSIQ` (SOIC-8, **208 mil** wide) and `APS6404L-3SQR` (SOIC-8, 150 mil).
-
-| Pin | Flash pin name | PSRAM pin name | Net |
-|---|---|---|---|
-| 1 | /CS | CE# | flash: `QSPI_SS`; PSRAM: `PSRAM_CS` |
-| 2 | DO (IO1) | SO / SIO1 | `QSPI_SD1` |
-| 3 | /WP (IO2) | SIO2 | `QSPI_SD2` |
-| 4 | GND | VSS | `GND` |
-| 5 | DI (IO0) | SI / SIO0 | `QSPI_SD0` |
-| 6 | CLK | SCLK | `QSPI_SCLK` |
-| 7 | /HOLD (IO3) | SIO3 | `QSPI_SD3` |
-| 8 | VCC | VDD | `3V3`, with **100 nF** to GND on each chip |
-
-- [ ] On the RP2350: label **QSPI_SS**, **QSPI_SCLK** and **QSPI_SD0–SD3** with the same names.
-- [ ] **PSRAM_CS** → **10 kΩ** to `3V3`, so the PSRAM stays off until the firmware starts it.
-
-### M6. Buttons and USB
-
-- [ ] **BOOTSEL:** `QSPI_SS` → resistor **1 kΩ** → button SW3 → GND
-- [ ] **RUN:** RUN pin → **10 kΩ** to `3V3`, and RUN → button SW4 → GND
-- [ ] For both buttons, search `TS-1088` or `tactile 3x4` and pick a small SMD 2-pin or 4-pin
-      button. With 4-pin buttons, the pins are joined in pairs: check the symbol, and wire one
-      pair to each side.
-- [ ] **USB_DP** → **27 Ω** → `USB_DP_C`
-- [ ] **USB_DM** → **27 Ω** → `USB_DM_C`
-
-(`USB_DP_C` and `USB_DM_C` are the labels you already used on the Power page, so this joins the
-chip to the USB-C socket.)
-
-### M7. SWD and GPIO labels
-
-- [ ] **SWCLK** → label `SWCLK`. **SWDIO** → label `SWDIO`. (I'll add pads for these in layout.)
-- [ ] One short stub and label on each GPIO pin, from this table:
-
-| GPIO | Label | | GPIO | Label |
-|---|---|---|---|---|
-| 0 | No Connect flag | | 16 | `LCD_DC` |
-| 1 | `HP_DET` | | 17 | `LCD_CS` |
-| 2 | `GAUGE_ALRT_N` | | 18 | `SPI0_SCK` |
-| 3 | `REG_PG` | | 19 | `SPI0_MOSI` |
-| 4 | `I2C_SDA` | | 20 | `SPI0_MISO` |
-| 5 | `I2C_SCL` | | 21 | `LCD_RST` |
-| 6 | `BTN_PLAY_N` | | 22 | `TOUCH_CS` |
-| 7 | `SD_CS` | | 23 | `RM2_ON` |
-| 8 | `PSRAM_CS` | | 24 | `RM2_DATA` |
-| 9 | `I2S_DIN` | | 25 | `RM2_CS` |
-| 10 | `I2S_BCK` | | 26 | `TOUCH_IRQ` |
-| 11 | `I2S_LRCK` | | 27 | `PGOOD_N` |
-| 12 | `DAC_XSMT` | | 28 | `CHG_N` |
-| 13 | `LCD_LED` | | 29 | `RM2_CLK` |
-| 14, 15 | No Connect flag | | | |
-
-The labels must be **spelled exactly** like this, including underscores. They connect to the
-other pages through these names.
-
-### M8. Check and send
-
-1. **Design → Annotate**, then **Design → Check DRC**. After this page, the `CHG_N`, `I2C_SDA`
-   and similar warnings from the Power page should disappear, because both ends now exist.
-2. Send the PDF of pages 1 and 2, plus the **BOM**.
+1. **Design → Annotate**, then **Design → Check DRC**. The "single pin" warnings for `CHG_N`,
+   `I2C_SDA` and so on from the Power page should now be gone, because both ends exist.
+2. **Back on the Power page**, make the two changes from the new plan, if you haven't yet:
+   - delete the 3.3 V regulator group (TPS63802, inductor, its capacitors and the 56k/10k/100k
+     resistors) and the USBLC6-2SC6;
+   - USB-C data pins and SBU pins → No Connect; switch common → `3V3_EN`, one side `GND`, the
+     other side No Connect.
+3. Send the PDF of both pages, plus the **BOM**.
 
 ---
 
-## Part E — The other sheets (same method)
+## Part E — The other pages (same method)
 
-Use the same steps: place the chip, then go through its spec section line by line, with stubs and
-labels. Draw them in this order, sending a PDF after each one:
+Use the same steps: place the chip, then go through its section of the spec line by line, with
+stubs and labels. Send a PDF after each one.
 
 | Page | What's on it | Beginner tips |
 |---|---|---|
-| **3 Radio** | RM2 module | The RM2 is probably **not** in EasyEDA's library, so you'll need to make its symbol and footprint (see Part F). Do this page after page 2. |
-| **4 Audio** | PCM5102A DAC, headphone jack | Straightforward: about 12 capacitors and resistors, all listed in the spec. |
-| **5 Screen** | the two sockets for the screen module, the play button, mounting holes | Use generic **1×14** and **1×4 female header, 2.54 mm** parts. Pin 1 of each socket must get the net from the spec's pin table. Mounting holes are placed on the PCB in Part G, not here. |
+| **3 Audio** | PCM5102A DAC, headphone jack | About 12 capacitors and resistors, all listed in the spec. |
+| **4 Screen** | the two sockets for the screen module, the play button | Use generic **1×14** and **1×4 female header, 2.54 mm** parts. Pin 1 of each socket must get the net from the spec's pin table. Mounting holes are placed on the PCB in Part G, not here. |
 
 ---
 
-## Part F — Making a part that isn't in the library (the RM2)
-
-1. First, search the library for `RM2` and `Raspberry Pi RM2`. Someone may have shared one in the
-   **user-contributed** library section. If you find one, send me its pin list before using it.
-2. If not, the easiest route is to **import Raspberry Pi's KiCad files** for the RM2 (they publish
-   them with the RM2 datasheet): **File → Import → KiCad**, and choose the symbol/footprint
-   library files.
-3. If importing doesn't work, make it by hand. **File → New → Symbol**: draw a rectangle and add
-   21 pins named as in the RM2 datasheet. Then **File → New → Footprint**: 21 castellated pads at
-   the datasheet's positions on a 16.5 × 14.5 mm outline. This is fiddly. Send me the datasheet
-   page and I'll write you the exact pad coordinates.
-4. JLCPCB likely won't stock the RM2, so you'll solder it by hand after the boards arrive.
-   Castellated pads are among the easiest parts to hand-solder.
-
----
-
-## Part G — From schematic to board (after all five pages are reviewed)
-
-Do this only after I've checked all five pages. Changes are still possible later, but much easier
-before layout starts.
+## Part G — From schematic to board (after all four pages are reviewed)
 
 ### G1. Make the PCB
 
 1. **Design → Update/Convert Schematic to PCB**. A dialog lists every part and net. Click
    **Apply Changes**.
 2. The PCB opens with every part piled to one side, joined by thin straight lines (the
-   **ratsnest**). The lines show which pads must be connected, not tracks yet.
-3. **Check:** a part on page 2 with a `3V3` pin should have a ratsnest line to parts on page 1.
-   That confirms the pages are linked.
+   **ratsnest**): the connections still to be made.
+3. **Check:** the Pico should have ratsnest lines to parts on all the other pages. That confirms
+   the pages are linked.
 
 ### G2. Board settings
 
-1. **Layers:** **Tools → Layer Manager** → **4 copper layers**. Then set the stack-up to JLCPCB's
-   standard 4-layer stack with **0.8 mm thickness**: inner layer 1 = **GND**, inner layer 2 =
-   **power**.
-2. **Design rules:** **Design → Design Rule** (or *Rules Manager*). Set the minimum track width and
-   spacing to 0.1 mm. Use 0.15 mm for signals, 0.4 mm for power, and vias of 0.3 mm drill / 0.45 mm
-   pad.
-3. **Units:** set them to **mm** (top toolbar or settings).
+1. **Layers:** **Tools → Layer Manager** → **2 copper layers**, thickness **1.6 mm**.
+2. **Design rules:** **Design → Design Rule**: track width 0.25 mm for signals, **0.5 mm** for power
+   nets (`VBUS`, `VSYS`, `VBAT`, `3V3`, `GND`), clearance 0.2 mm, vias 0.3 mm drill / 0.6 mm pad.
+3. **Units:** mm.
 
-### G3. Draw the outline
+### G3. Draw the outline (with the antenna notch)
 
-1. Select the **Board Outline** layer, then **Place → Board Outline** → rectangle. Draw it, then
-   type the exact size in the right panel: **50 × 94 mm**, with a **3 mm** corner radius.
-2. Put the outline's top-left corner at **(0, 0)**, so all the positions in the spec can be typed
-   in directly.
+The board is 52 × 109 mm with a 9 × 14 mm notch in the right edge, under the Pico's antenna. Draw
+it as one shape: select the **Board Outline** layer, **Place → Board Outline** → **polygon**, and
+click these corners in order (or type them in the right panel):
 
-### G4. Place the fixed parts first, by typing coordinates
+(0, 0) → (52, 0) → (52, 4.5) → (42.5, 4.5) → (42.5, 18.5) → (52, 18.5) → (52, 109) → (0, 109) → back to (0, 0)
 
-For each of these, select the part and type its **X / Y** and rotation into the right panel. The
-positions are in `docs/pcb-plan.md` → *Layout*:
+If EasyEDA's Y axis counts **upward**, use negative Y values instead (0, −4.5 and so on). Either way,
+the outline must look like the drawing in the spec, with the notch near the top-right corner.
 
-- the 4 **mounting holes** (**Place → Hole**, 2.7 mm diameter for M2.5 screws),
-- **J3** (the 14-pin socket; **pin 1 is on the right**, because the module is mirrored when it
-  faces down onto our board) and **J4** (the 4-pin SD socket),
-- **J1** USB-C bottom-left, **J5** jack bottom-right, **SW1** and **SW2** on the left edge, the
-  **RM2** on the 8 mm antenna tab at the top.
+### G4. Place the fixed parts by typing coordinates
 
-Then check the screen fit: print `docs/screen_template_1to1.pdf` and lay it against the module. In
-EasyEDA, **View → 3D** shows the board in 3D.
+Select each part and type its X / Y and rotation into the right panel:
+
+| Part | Position |
+|---|---|
+| **Pico 2 W** | centre at **(26.0, 11.5)**, rotated so the **USB end is at the left edge**. Pin 1 ends up bottom-left at (1.87, 20.39). Its antenna end sits over the notch |
+| 4 mounting holes (**Place → Hole**, 2.7 mm) | (3.7, 29.9), (48.3, 29.9), (3.7, 106.0), (48.3, 106.0) |
+| J3 (14-pin socket) | pin 1 at **(45.0, 25.0)**, the other pins running to the **left** |
+| J4 (4-pin SD socket) | pin 1 at **(29.8, 105.9)**, the other pins running to the left |
+| J1 USB-C | bottom edge, left, around x 12, with the opening at the edge |
+| J5 jack | bottom edge, right, around x 38 |
+| SW1, SW2 | left edge, around y 45 and y 60, with the slider and button sticking out past the edge |
+
+Then print `docs/screen_template_1to1.pdf` and lay it against the module to double-check the screen
+positions, and look at **View → 3D**.
 
 ### G5. Keep-outs
 
-- **No copper under the RM2 antenna, on any layer:** **Place → Keep-out Region / Prohibited
-  Region**, covering the antenna end of the tab, applied to all layers.
-- **Nothing tall under the screen module's SD holder** (right side, 32–61 mm below the tab).
-- **No parts on the bottom side**, because the battery sticks there.
+- **Antenna:** no copper on either layer within about 2 mm of the notch: **Place → Keep-out Region
+  / Prohibited Region**, all layers.
+- **Nothing under the Pico** except its own pads.
+- **Under the module's SD holder** (x 33–51, y 55.5–83.8): no part taller than 1 mm.
+- **Bottom side:** no parts at all; the battery sticks there.
 
 ### G6. Place everything else
 
-Move each group next to the chip it belongs to, in this order: the RP2350 with its flash, PSRAM,
-crystal and decoupling capacitors (each capacitor next to its pin), then the charger, then the
-regulator with its inductor and capacitors tight together, then the DAC near the jack and away from
-the regulator. Then send me a screenshot of the layout **before routing**. Placement decides most
-of how well the board works.
+Charger with its capacitors right next to its pins, gauge next to the battery connector, DAC next
+to the jack. Then send me a screenshot **before routing**. Placement decides most of how well the
+board works.
 
 ### G7. Route (I'll walk you through this when we get there)
 
-The USB pair first (**Route → Differential Pair**, 90 Ω), then wide power tracks, then the rest.
-Finally, pour GND copper on the top and bottom layers. Run **Design → Check DRC** until it's clean.
+Power tracks first (0.5 mm), then signals. Then fill the bottom layer with a solid GND copper pour
+and the top layer with GND around the parts. Run **Design → Check DRC** until it's clean.
 
 ---
 
@@ -531,11 +433,11 @@ Finally, pour GND copper on the top and bottom layers. Run **Design → Check DR
 
 1. **Export → PCB Fabrication Files (Gerber)**, **Export → Bill of Materials (BOM)**, and
    **Export → Pick and Place File**. Send all three to me for a final check.
-2. **Order → PCB Order** sends the design to JLCPCB directly. On JLCPCB's page, choose
-   **4 layers, 0.8 mm, ENIG**, 5 boards, and switch on **PCB Assembly → top side**.
+2. **Order → PCB Order** sends the design to JLCPCB. Choose **2 layers, 1.6 mm**, 5 boards, and
+   switch on **PCB Assembly → top side**.
 3. JLCPCB then shows each part on a picture of the board. **Check every chip's pin 1 dot and
-   rotation** before paying. Parts it can't assemble (probably the RM2) are left off. You'll
-   solder those yourself.
+   rotation** before paying. Leave out the Pico and the two screen sockets; you solder those
+   yourself.
 
 ---
 

@@ -12,8 +12,14 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 **Fixed in review**
 - Charger IN, the second OUT pin and the second BAT pin were unconnected; the two 22 µF output capacitors were in series; the gauge's 1 µF capacitor was missing; regulator PG label added
 
+**Changed**
+- Switched the board to Ash's own **Pico 2 W**, soldered on, instead of a bare RP2350A + RM2 radio: no chip, flash, PSRAM, crystal, radio or 3.3 V regulator to design, and 2 layers instead of 4
+- The Pico sits in a 23 mm strip above the screen module with a 9 × 14 mm cut-out under its antenna (Raspberry Pi's carrier-board rule); board 52 × 109 mm, Pod about 57 × 115 × 24 mm
+- Power: charger output feeds the Pico's VSYS; the power switch grounds the Pico's 3V3_EN; the Pico's 3V3 pin powers the screen, DAC and gauge. USB-C charges, the Pico's micro-USB programs
+- Same GPIOs as the breadboard, so `pod.uf2` runs unchanged
+
 **Next**
-- Sheet 2 (MCU): RP2350A minimal design + flash + PSRAM + GPIO labels (checklist in the guide, Part D2)
+- Remove the regulator and USB protection from the Power page; draw page 2 (Pico) from the guide, Part D2
 
 ## 2026-10-07 (later) — Home screen, SD player, battery
 

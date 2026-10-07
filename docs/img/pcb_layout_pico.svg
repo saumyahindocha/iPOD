@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -14 126 137" width="1188" height="1233" font-family="DejaVu Sans, sans-serif">
+<rect x="-20" y="-14" width="132" height="137" fill="#fff"/>
+<path d="M3,0 H49 Q52,0 52,3 V4.5 H43 V18.5 H52 V106 Q52,109 49,109 H3 Q0,109 0,106 V3 Q0,0 3,0 Z" fill="#e8f3e8" stroke="#1b5e20" stroke-width="0.4"/>
+<rect x="1" y="23" width="50" height="86" fill="none" stroke="#c62828" stroke-width="0.35" stroke-dasharray="1.5,1"/>
+<text x="26" y="37" font-size="2.1" fill="#c62828" text-anchor="middle">dashed: screen module above it</text>
+<rect x="33" y="55.5" width="18" height="28.299999999999997" fill="#fde0dc" stroke="#c62828" stroke-width="0.25"/>
+<text x="42.0" y="68.65" font-size="1.9" fill="#b71c1c" text-anchor="middle">SD holder</text>
+<text x="42.0" y="71.25" font-size="1.9" fill="#b71c1c" text-anchor="middle">keep clear</text>
+<text x="53" y="69.65" font-size="2" fill="#b71c1c">◀ card slot</text>
+<rect x="0.5" y="1" width="51" height="21" rx="1" fill="#2e7d32" fill-opacity="0.18" stroke="#1b5e20" stroke-width="0.35"/>
+<circle cx="1.87" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="1.87" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="4.41" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="4.41" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="6.95" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="6.95" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="9.49" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="9.49" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="12.03" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="12.03" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="14.57" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="14.57" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="17.11" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="17.11" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="19.65" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="19.65" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="22.19" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="22.19" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="24.73" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="24.73" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="27.27" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="27.27" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="29.81" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="29.81" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="32.35" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="32.35" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="34.89" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="34.89" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="37.43" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="37.43" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="39.97" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="39.97" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="42.51" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="42.51" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="45.05" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="45.05" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="47.59" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="47.59" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="50.13" cy="20.39" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<circle cx="50.13" cy="2.61" r="0.7" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<text x="1.87" y="18.79" font-size="1.7" fill="#000">1</text>
+<text x="1.87" y="5.409999999999999" font-size="1.7" fill="#000">40</text>
+<rect x="-0.8" y="7.5" width="5.5" height="8" fill="#9e9e9e" stroke="#424242" stroke-width="0.2"/>
+<text x="19.5" y="12.4" font-size="2.6" text-anchor="middle" font-weight="bold">Pico 2 W (51 × 21)</text>
+<text x="3.8" y="17.8" font-size="1.6">micro-USB</text>
+<rect x="43" y="4.5" width="9" height="14" fill="url(#h)" stroke="#1565c0" stroke-width="0.3"/>
+<defs><pattern id="h" width="1.2" height="1.2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="1.2" stroke="#1565c0" stroke-width="0.3"/></pattern></defs>
+<text x="53" y="10.5" font-size="2" fill="#1565c0">◀ antenna: 9 × 14 mm</text>
+<text x="53" y="13.1" font-size="2" fill="#1565c0">   cut-out, no copper</text>
+<text x="-1.5" y="12.2" font-size="2" text-anchor="end">USB ▶</text>
+<circle cx="48.3" cy="29.9" r="1.35" fill="#fff" stroke="#000" stroke-width="0.3"/>
+<text x="48.3" y="33.5" font-size="1.7" text-anchor="middle">H</text>
+<circle cx="3.700000000000003" cy="29.9" r="1.35" fill="#fff" stroke="#000" stroke-width="0.3"/>
+<text x="3.700000000000003" y="33.5" font-size="1.7" text-anchor="middle">H</text>
+<circle cx="48.3" cy="106.0" r="1.35" fill="#fff" stroke="#000" stroke-width="0.3"/>
+<text x="48.3" y="103.7" font-size="1.7" text-anchor="middle">H</text>
+<circle cx="3.700000000000003" cy="106.0" r="1.35" fill="#fff" stroke="#000" stroke-width="0.3"/>
+<text x="3.700000000000003" y="103.7" font-size="1.7" text-anchor="middle">H</text>
+<rect x="44.20" y="24.2" width="1.6" height="1.6" fill="#e53935" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="41.66" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="39.12" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="36.58" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="34.04" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="31.50" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="28.96" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="26.42" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="23.88" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="21.34" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="18.80" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="16.26" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="13.72" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="11.18" y="24.2" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<text x="45.0" y="28.4" font-size="1.7" text-anchor="middle" fill="#c62828">pin 1</text>
+<text x="28.5" y="28.4" font-size="2" text-anchor="middle">J3 (14-pin socket)</text>
+<rect x="29.01" y="105.10" width="1.6" height="1.6" fill="#e53935" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="26.47" y="105.10" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="23.93" y="105.10" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<rect x="21.39" y="105.10" width="1.6" height="1.6" fill="#fbc02d" stroke="#5d4037" stroke-width="0.15"/>
+<text x="26.009999999999998" y="103.9" font-size="1.8" text-anchor="middle">J4 (SD)</text><text x="29.81" y="108.9" font-size="1.5" text-anchor="middle" fill="#c62828">pin 1</text>
+<rect x="8" y="102.5" width="9" height="6.5" fill="#bdbdbd" stroke="#424242" stroke-width="0.25"/><text x="12.5" y="112" font-size="2" text-anchor="middle">USB-C (charging)</text>
+<rect x="35" y="97" width="6" height="12" fill="#bdbdbd" stroke="#424242" stroke-width="0.25"/><text x="38" y="112" font-size="2" text-anchor="middle">jack</text>
+<rect x="0" y="42" width="4" height="9" fill="#bdbdbd" stroke="#424242" stroke-width="0.25"/><text x="-1.5" y="47.5" font-size="2" text-anchor="end">SW1 power/hold</text>
+<rect x="0" y="58" width="3.5" height="5" fill="#bdbdbd" stroke="#424242" stroke-width="0.25"/><text x="-1.5" y="61" font-size="2" text-anchor="end">SW2 play</text>
+<text x="6" y="80" font-size="2.2" fill="#1b5e20">charger · gauge · DAC</text>
+<text x="6" y="83" font-size="2.2" fill="#1b5e20">(top side, under 4 mm tall)</text>
+<text x="26.0" y="-4" font-size="2.4" text-anchor="middle">52 mm</text><line x1="0" y1="-2.5" x2="52" y2="-2.5" stroke="#000" stroke-width="0.2"/>
+<text x="76" y="74.5" font-size="2.4" text-anchor="middle" transform="rotate(90 76 74.5)">109 mm</text>
+<text x="0" y="116.5" font-size="1.9" fill="#555">Top view, to scale. H = M2.5 hole. Underside: battery only.</text>
+</svg>

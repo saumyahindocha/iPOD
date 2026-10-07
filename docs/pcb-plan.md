@@ -1,169 +1,140 @@
 # Pod — PCB Rev A design spec
 
-This is the locked-in design for the first Pod board, built from the decisions made on 7 Oct 2026.
-It is meant to be followed while drawing the schematic in KiCad: one section per schematic sheet,
-with every connection written out. The KiCad project lives in `hardware/pod-pcb/`.
+The design for the first Pod board. One section per schematic page, with every connection written
+out. It's drawn in **EasyEDA Pro**; `docs/easyeda-guide.md` explains how, click by click.
+
+**Change on 7 Oct 2026 (evening):** the board now carries Ash's own **Raspberry Pi Pico 2 W**,
+soldered on, instead of a bare RP2350A chip and RM2 radio. This removes the chip, flash, PSRAM,
+crystal, radio and 3.3 V regulator from our board (the Pico has all of them), drops the radio page,
+and makes a 2-layer board enough. The KiCad skeleton in `hardware/pod-pcb/` was for the old
+version and is no longer used.
 
 ## Decisions
 
 | # | Decision | Choice |
 |---|---|---|
-| 1 | Main chip | **RP2350A chip + Raspberry Pi RM2 radio module**, all on our board |
+| 1 | Main board | **Raspberry Pi Pico 2 W module**, soldered onto our PCB (through its pin headers or castellated edge) |
 | 2 | Screen | **Keep the 2.8" 240×320 resistive module** (ILI9341 + XPT2046 + microSD slot) |
-| 3 | Screen mounting | **The red module plugs into sockets on our PCB** (no new screen to buy) |
-| 4 | Battery | **1000 mAh single-cell LiPo, ~5 mm thick** (503450 size, with protection board), **mounted on the underside of our board** |
+| 3 | Screen mounting | **The red module plugs into sockets on our PCB** |
+| 4 | Battery | **1000 mAh single-cell LiPo, ~5 mm thick** (503450, with protection board), **on the underside of our board** |
 | 5 | Controls | **Play/pause + wake button** and an **iPod-style power/hold slide switch** |
+| 6 | Ports | **USB-C for charging** (bottom edge); the **Pico's micro-USB for programming** (left side, top) |
 
-Everything else (USB-C charging, power path, fuel gauge, 3.3 V regulator, DAC, headphone jack,
-16 MB flash, 8 MB PSRAM) is on our board too.
+On our board: USB-C charging socket, BQ24074 charger with power path, MAX17048 fuel gauge, power
+switch, PCM5102A DAC and headphone jack, the sockets for the screen module, and the play button.
 
-**Size:** about **55 × 100 × 24 mm**. The board is the module's 86 × 50 mm footprint plus an 8 mm
-"antenna tab" at the top (see Layout). The module sits on 8.5 mm sockets above our board; the gap
-holds our electronics and the module's own microSD holder. The battery is stuck to the **underside**
-of our board (it no longer fits in the gap beside the SD holder; decided 7 Oct 2026).
+**Size:** board **52 × 109 mm**, Pod about **57 × 115 × 24 mm**. The Pico sits in a 23 mm strip
+at the top, beyond the screen module, so its antenna isn't covered (see Layout).
 
 ## Firmware compatibility
 
-Every pin the breadboard uses stays the same, so `pod.uf2` runs on the board unchanged. New on the
-board: PSRAM, charger status pins, the button, headphone detect and a DAC mute pin; the firmware gets
+The Pico uses exactly the breadboard pins, so `pod.uf2` runs on the board unchanged. New on the
+board: charger status pins, the button, headphone detect and a DAC mute pin. The firmware gets
 small additions for these after bring-up.
+
+## How the power works
+
+- **USB-C** → `VBUS` → BQ24074 charger → `VSYS` → the Pico's **VSYS** pin. The charger runs the Pod
+  from USB and charges the battery at the same time; without USB it runs it from the battery.
+- The Pico's own regulator makes **3.3 V** from VSYS. Its **3V3** pin powers the screen, DAC and
+  fuel gauge. Keep the total 3V3 load under **300 mA** (the screen backlight is the largest at
+  about 80 mA, so there's plenty of margin).
+- **SW1** pulls the Pico's **3V3_EN** pin to GND for *off*: the Pico, screen and DAC lose power;
+  the charger still charges. The off-state drain is about 0.07 mA (over a year on a full charge).
+- The Pico's **VBUS** pin is joined to our `VBUS`, so the micro-USB cable can charge too.
+  **Plug in only one cable at a time.**
 
 ---
 
 ## Parts list (Rev A)
 
-Prefer JLCPCB "basic" parts where an equivalent exists (cheaper assembly). Look up each MPN on
-jlcpcb.com/parts and put its LCSC number in the part's `LCSC` field in KiCad.
+Prefer JLCPCB **Basic** parts for resistors and capacitors (cheaper assembly).
 
 | Ref | Part | MPN (example) | Package | Notes |
 |---|---|---|---|---|
-| U5 | Microcontroller | RP2350A | QFN-60 7×7 | JLC assembles |
-| U6 | 16 MB QSPI flash | W25Q128JVSIQ | SOIC-8 | |
-| U7 | 8 MB QSPI PSRAM | APS6404L-3SQR-SN | SOIC-8 | CS on GP8 |
-| Y1 | 12 MHz crystal | ABM8-272-T3 | 3.2×2.5 | as in Raspberry Pi's minimal design |
-| M1 | Bluetooth radio | Raspberry Pi RM2 | 16.5×14.5 castellated | |
+| U1 | **Raspberry Pi Pico 2 W** | — (Ash's own) | 51 × 21 mm module | hand-soldered; not JLCPCB-assembled |
 | U2 | Charger + power path | BQ24074RGTR | VQFN-16 3×3 | |
 | U3 | Fuel gauge | MAX17048G+T10 | TDFN-8 2×2 | firmware already supports it |
-| U4 | 3.3 V buck-boost | TPS63802DLAR | VSON-10 3×2 | |
-| L1 | 0.47 µH inductor | XFL4015-471ME | 4×4 | for U4 |
 | U8 | Audio DAC | PCM5102APWR | TSSOP-20 | |
-| U1 | USB ESD | USBLC6-2SC6 | SOT-23-6 | |
-| J1 | USB-C socket | GCT USB4105-GF-A (or HRO TYPE-C-31-M-12) | 16-pin SMD | |
-| J2 | Battery connector | JST S2B-PH-SM4-TB | PH 2.0 mm | top side at the left edge, next to the battery-lead notch; **check your battery's polarity** |
+| J1 | USB-C socket (charging) | HRO TYPE-C-31-M-12 | 16-pin SMD | |
+| J2 | Battery connector | JST S2B-PH-SM4-TB | PH 2.0 mm | **check your battery's polarity** |
 | J3 | Screen socket | 1×14 female header, 2.54 mm, 8.5 mm tall | THT | module's main pins |
 | J4 | SD socket | 1×4 female header, 2.54 mm, 8.5 mm tall | THT | module's SD pins |
 | J5 | Headphone jack | CUI SJ-43514-SMT-TR | SMD, with detect switch | |
-| SW1 | Power/hold switch | MSK-12C02 (or C&K JS102011JAQN) | SPDT side slide | |
-| SW2 | Play/pause/wake | side-push SMD tactile (e.g. Alps SKRTLAE010) | SMD | on the board edge |
-| SW3, SW4 | BOOTSEL, RUN | small SMD tactile | SMD | programming/reset |
+| SW1 | Power/hold switch | MSK-12C02 | SPDT side slide | |
+| SW2 | Play/pause/wake | side-push SMD tactile | SMD | on the board edge |
 | FB1 | Ferrite bead | 600 Ω @ 100 MHz | 0603 | DAC analog supply |
-| — | Resistors, capacitors | values per sheet below | 0402 (bulk caps 0603/0805) | |
-| BT1 | Battery | 1000 mAh LiPo, 503450, with protection PCB and JST-PH lead | | off-board |
+| — | Resistors, capacitors | values per page below | 0402 (bulk caps 0603/0805) | |
+| BT1 | Battery | 1000 mAh LiPo, 503450, protection PCB, JST-PH lead | | off-board |
 
 ---
 
 ## Sheet 1 — Power
 
-**Nets:** `VBUS` (USB 5 V), `VSYS` (charger output, 3.6–4.4 V), `VBAT` (cell), `3V3`, `GND`.
+**Nets:** `VBUS` (USB 5 V), `VSYS` (charger output, 3.6–4.4 V, to the Pico), `VBAT` (cell),
+`3V3` (from the Pico), `3V3_EN`, `GND`.
 
-**J1 USB-C**
+**J1 USB-C (charging only)**
 - VBUS pins (A4, A9, B4, B9) → `VBUS`. GND pins (A1, A12, B1, B12) and shell → `GND`.
-- CC1 (A5) → R1 **5.1 kΩ** → GND. CC2 (B5) → R2 **5.1 kΩ** → GND. *(Without these, USB-C chargers give 0 V.)*
-- D+ (A6 and B6 tied) → `USB_DP_C`. D− (A7 and B7 tied) → `USB_DM_C`. SBU1/SBU2 not connected.
-
-**U1 USBLC6-2SC6 (ESD)** — I/O1 ↔ `USB_DP_C`, I/O2 ↔ `USB_DM_C` (both flow-through), VBUS pin → `VBUS`, GND → `GND`.
+- CC1 (A5) → **5.1 kΩ** → GND. CC2 (B5) → **5.1 kΩ** → GND. *(Without these, USB-C chargers give 0 V.)*
+- D+ (A6, B6), D− (A7, B7), SBU1, SBU2 → not connected. *(Data goes through the Pico's micro-USB.)*
 
 **U2 BQ24074 (charger with power path)**
-- IN → `VBUS`, with C1 **4.7 µF** to GND.
-- OUT → `VSYS`, with C2 **10 µF** to GND. *(Runs the Pod from USB while the cell charges separately.)*
-- BAT → `VBAT`, with C3 **10 µF** to GND.
-- ISET → R4 **1.8 kΩ** → GND → charge current = 890 / 1800 ≈ **0.49 A** (about 0.5 C for 1000 mAh; 1.8 kΩ is a standard value, so a JLCPCB Basic part).
-- ILIM → R5 **1.2 kΩ** → GND → input limit = 1610 / 1200 ≈ **1.34 A** (enough for 0.5 A charging + the Pod running; 1.0 kΩ would exceed the 1.5 A maximum).
-- EN2 → `VBUS`, EN1 → GND → "input limit set by ILIM resistor".
-- CE → GND (charging always enabled). SYSOFF → GND. TMR → leave open (default safety timers).
-- ITERM → R6 **3.0 kΩ** → GND → charge ends at 0.03 × 3000 / 1800 ≈ **50 mA**.
-- TS → R3 **10 kΩ** → GND (use the battery's NTC instead if it has a third wire).
-- CHG (open-drain, low = charging) → `CHG_N` → GP28, pull-up R7 **100 kΩ** to 3V3.
-- PGOOD (open-drain, low = USB present) → `PGOOD_N` → GP27, pull-up R8 **100 kΩ** to 3V3.
+- IN → `VBUS`, with **4.7 µF** to GND.
+- Both OUT pins → `VSYS`, with **10 µF** to GND.
+- Both BAT pins → `VBAT`, with **10 µF** to GND.
+- ISET → **1.8 kΩ** → GND → charge current = 890 / 1800 ≈ **0.49 A**.
+- ILIM → **1.2 kΩ** → GND → input limit = 1610 / 1200 ≈ **1.34 A** (1.0 kΩ would exceed the 1.5 A maximum).
+- ITERM → **3.0 kΩ** → GND → charging ends at 0.03 × 3000 / 1800 ≈ **50 mA**.
+- TS → **10 kΩ** → GND.
+- EN2 → `VBUS`, EN1 → GND (input limit set by ILIM). CE → GND. SYSOFF → GND. TMR → not connected.
+- CHG (low = charging) → `CHG_N` → GP28, **100 kΩ** to `3V3`.
+- PGOOD (low = USB present) → `PGOOD_N` → GP27, **100 kΩ** to `3V3`.
+- VSS and exposed pad → GND.
 
-**J2 battery** — pin + → `VBAT`, pin − → `GND`. LiPo leads have no standard polarity: check before plugging in.
+**J2 battery** — pin 1 → `VBAT`, pin 2 → `GND`, mounting tabs → GND. Check the cell's polarity first.
 
 **U3 MAX17048 (fuel gauge)**
-- VDD → `VBAT` with C4 **1 µF** to GND. CELL → `VBAT`. GND → `GND`. CTG → GND. QSTRT → GND.
-- SDA → `I2C_SDA` (GP4), SCL → `I2C_SCL` (GP5); pull-ups R9, R10 **4.7 kΩ** to 3V3.
-- ALRT (open-drain) → `GAUGE_ALRT_N` → GP2, pull-up R11 **10 kΩ** to 3V3.
+- VDD → `VBAT` with **1 µF** to GND. CELL → `VBAT`. GND, CTG, QSTRT, exposed pad → GND.
+- SDA → `I2C_SDA` (GP4), SCL → `I2C_SCL` (GP5); **4.7 kΩ** pull-ups to `3V3`.
+- ALRT → `GAUGE_ALRT_N` → GP2, **10 kΩ** to `3V3`.
 
-**SW1 power/hold switch (SPDT)** — common → `REG_EN`; ON throw → `VSYS`; OFF throw → `GND`.
-*(Off = the regulator is disabled: µA drain. The charger still works when off.)*
+**SW1 power/hold switch (SPDT)** — middle (common) → `3V3_EN`; one side → `GND` (off); other side →
+not connected (on: the Pico's own 100 kΩ pull-up holds 3V3_EN high).
 
-**U4 TPS63802 (3.3 V buck-boost)**
-- VIN → `VSYS`, C5 **10 µF** to GND. EN → `REG_EN`.
-- L1 **0.47 µH** between pins L1 and L2.
-- VOUT → `3V3`, C6 **22 µF** + C7 **22 µF** to GND.
-- FB divider: R12 **56 kΩ** from VOUT to FB, R13 **10 kΩ** from FB to GND → 0.5 × (1 + 56/10) = **3.30 V** (standard values, JLCPCB Basic parts; the divider draws 50 µA, only while the Pod is on).
-- MODE → GND (power-save mode for battery life; tie to 3V3 for forced PWM if you ever hear regulator noise in the audio).
-- PG → `REG_PG` → GP3 with R14 **100 kΩ** to 3V3 (optional; can be left unconnected).
-- AGND and GND → `GND`, joined at the chip.
+*(No 3.3 V regulator and no USB ESD chip any more: the Pico has both.)*
 
-## Sheet 2 — MCU (RP2350A, flash, PSRAM, USB)
+## Sheet 2 — Pico 2 W
 
-**Copy Raspberry Pi's "RP2350 minimal design" for this sheet exactly** (KiCad files from the
-*Hardware design with RP2350* guide): the chip's supply pins and their 100 nF decoupling, the core
-regulator (VREG_VIN, VREG_AVDD filter, VREG_LX inductor to DVDD, DVDD capacitors), the 12 MHz crystal
-with its load capacitors and series resistor, the flash, BOOTSEL and RUN. This is the proven part.
+Every Pico pin, by its number on the Pico (pin 1 is next to the USB connector):
 
-Minimal-design values (from *Hardware design with RP2350*): 100 nF on every IOVDD, DVDD, QSPI_IOVDD,
-USB_OTP_VDD and ADC_AVDD pin; VREG_VIN 4.7 µF; VREG_AVDD fed through **33 Ω** with 4.7 µF; VREG_LX →
-**3.3 µH** (Abracon AOTA-B201610S3R3-101-T, polarity marked) → `1V1`, VREG_FB → `1V1`, 4.7 µF on `1V1`;
-crystal ABM8-272-T3 with **15 pF** load capacitors and **1 kΩ** in series with XOUT; RUN pull-up **10 kΩ**.
-TESTEN → GND. Pin-by-pin checklist: `docs/easyeda-guide.md`, Part D2.
+| Pin | Pico | Net | | Pin | Pico | Net |
+|---|---|---|---|---|---|---|
+| 1 | GP0 | not connected | | 21 | GP16 | `LCD_DC` |
+| 2 | GP1 | `HP_DET` | | 22 | GP17 | `LCD_CS` |
+| 3 | GND | `GND` | | 23 | GND | `GND` |
+| 4 | GP2 | `GAUGE_ALRT_N` | | 24 | GP18 | `SPI0_SCK` |
+| 5 | GP3 | not connected | | 25 | GP19 | `SPI0_MOSI` |
+| 6 | GP4 | `I2C_SDA` | | 26 | GP20 | `SPI0_MISO` |
+| 7 | GP5 | `I2C_SCL` | | 27 | GP21 | `LCD_RST` |
+| 8 | GND | `GND` | | 28 | GND | `GND` |
+| 9 | GP6 | `BTN_PLAY_N` | | 29 | GP22 | `TOUCH_CS` |
+| 10 | GP7 | `SD_CS` | | 30 | RUN | not connected |
+| 11 | GP8 | not connected | | 31 | GP26 | `TOUCH_IRQ` |
+| 12 | GP9 | `I2S_DIN` | | 32 | GP27 | `PGOOD_N` |
+| 13 | GND | `GND` | | 33 | AGND | `GND` |
+| 14 | GP10 | `I2S_BCK` | | 34 | GP28 | `CHG_N` |
+| 15 | GP11 | `I2S_LRCK` | | 35 | ADC_VREF | not connected |
+| 16 | GP12 | `DAC_XSMT` | | 36 | 3V3 (out) | `3V3` |
+| 17 | GP13 | `LCD_LED` | | 37 | 3V3_EN | `3V3_EN` |
+| 18 | GND | `GND` | | 38 | GND | `GND` |
+| 19 | GP14 | not connected | | 39 | VSYS | `VSYS` |
+| 20 | GP15 | not connected | | 40 | VBUS | `VBUS` |
 
-Changes from the minimal design:
-- **U6 flash:** W25Q128JVS (16 MB) on QSPI_SS / SCLK / SD0–SD3.
-- **U7 PSRAM:** APS6404L shares QSPI_SCLK and QSPI_SD0–SD3 with the flash; its CE# → **GP8**
-  (RP2350 XIP chip-select 1), pull-up R15 **10 kΩ** to 3V3, 100 nF decoupling.
-- **USB:** USB_DP → R16 **27 Ω** → `USB_DP_C`; USB_DM → R17 **27 Ω** → `USB_DM_C`.
-- **SW3 BOOTSEL:** QSPI_SS → R18 **1 kΩ** → SW3 → GND. **SW4 RUN:** RUN → SW4 → GND.
-- **SWD test pads:** SWCLK, SWDIO, 3V3, GND.
-- **Test pads** on spare GPIOs: GP0, GP14, GP15.
+The 3 debug pins (SWCLK, GND, SWDIO) at the antenna end: not connected; they sit over the antenna
+cut-out. Add **10 µF** from `3V3` to GND near pin 36 for the screen's backlight current.
 
-**GPIO map** (all other GPIOs are in sheets 3–5):
-
-| GPIO | Net | | GPIO | Net |
-|---|---|---|---|---|
-| 0 | test pad | | 16 | `LCD_DC` |
-| 1 | `HP_DET` (jack inserted) | | 17 | `LCD_CS` |
-| 2 | `GAUGE_ALRT_N` | | 18 | `SPI0_SCK` (screen, touch, SD) |
-| 3 | `REG_PG` | | 19 | `SPI0_MOSI` |
-| 4 | `I2C_SDA` | | 20 | `SPI0_MISO` (touch, SD) |
-| 5 | `I2C_SCL` | | 21 | `LCD_RST` |
-| 6 | `BTN_PLAY_N` | | 22 | `TOUCH_CS` |
-| 7 | `SD_CS` | | 23 | `RM2_ON` |
-| 8 | `PSRAM_CS` | | 24 | `RM2_DATA` |
-| 9 | `I2S_DIN` | | 25 | `RM2_CS` |
-| 10 | `I2S_BCK` | | 26 | `TOUCH_IRQ` |
-| 11 | `I2S_LRCK` | | 27 | `PGOOD_N` |
-| 12 | `DAC_XSMT` (mute) | | 28 | `CHG_N` |
-| 13 | `LCD_LED` (backlight PWM) | | 29 | `RM2_CLK` |
-| 14, 15 | test pads | | | |
-
-## Sheet 3 — Radio (RM2)
-
-From the RM2 datasheet:
-- Pin 16 Vin → `3V3` (3.0–4.8 V allowed; 3.3 V keeps it above the 3.2 V needed for full RF performance).
-  Pin 14 VDDIO → `3V3`. Decoupling: C **10 µF** + **100 nF** at pin 16, **100 nF** at pin 14.
-- Pins 1, 4, 7, 11, 15, 21 → GND.
-- Pin 3 gSPI SCLK → `RM2_CLK` (GP29).
-- Pin 5 gSPI data in → `RM2_DATA` (GP24) directly.
-- Pin 6 gSPI data out → R19 **470 Ω** → `RM2_DATA` (GP24).
-- Pin 10 nIRQ → R20 **10 kΩ** → `RM2_DATA` (GP24).
-- Pin 9 gSPI CS → `RM2_CS` (GP25).
-- Pins 12 (Wi-Fi on) and 13 (Bluetooth on) → `RM2_ON` (GP23).
-- Pins 2, 19, 20 (no connect) and 8, 17, 18 (radio GPIOs) → not connected.
-- **Antenna:** place the RM2 on the antenna tab with its antenna end at the board edge. Keep-out
-  under and around the antenna on **every layer** (no copper, no vias), per the RM2 footprint drawing.
-
-## Sheet 4 — Audio (PCM5102A + jack)
+## Sheet 3 — Audio (PCM5102A + jack)
 
 - Pin 1 CPVDD → `3V3`, 100 nF + 10 µF. Pin 3 CPGND → GND.
 - Pins 2 CAPP / 4 CAPM: **2.2 µF** between them. Pin 5 VNEG → **2.2 µF** to GND.
@@ -179,7 +150,7 @@ From the RM2 datasheet:
 - The PCM5102A is a line-level output; it drives earbuds at modest volume. If it's too quiet once
   built, a TPA6132A2 headphone amp can go between the DAC and the jack on Rev B.
 
-## Sheet 5 — Screen sockets and controls
+## Sheet 4 — Screen sockets and controls
 
 **J3 1×14 socket for the red module** (pin order as printed on the module, left to right):
 
@@ -210,88 +181,66 @@ the sockets, hold the module firmly so the sockets don't carry the screen's weig
 
 ---
 
+
+---
+
 ## Layout
 
-```
-          50 mm          (top view of our board, module above it)
-   ┌──────────────────┐ ─┐
-   │  RM2 + antenna   │  │ 8 mm antenna tab: no copper under the antenna,
-   │  ░░░keep-out░░░  │  │ nothing above it (it sticks out past the screen module)
-   ├──────────────────┤ ─┤
-   │ ⊕   J3 14-pin  ⊕ │  │ J3 pin 1 (VCC) on the RIGHT (module faces down onto us)
-   │                  │  │
-   │ RP2350  flash    │  │ Electronics on the top side, in the 8.5 mm gap,
-   │ PSRAM            │  │ all under ~4 mm tall
-   │ BQ24074 TPS63802 │┌─┤
-   │ MAX17048 DAC     ││ │ Module's SD holder hangs down here: keep clear;
-   │J2⊓ (lead notch)  │└─┤ the card goes in from the RIGHT edge
-   │                  │  │
-   │ ⊕   J4 SD 4-pin ⊕│  │
-   └──[USB-C]──[jack]─┘ ─┘ Bottom edge: USB-C (left), jack (right); left edge: SW1, SW2
-   Underside: 1000 mAh battery (34 × 50 × 5 mm), foam tape, lead through the notch to J2
-                         94 mm total
-```
+![Top view of the board, to scale](img/pcb_layout_pico.png)
 
-- **Why the antenna tab:** the screen module's copper directly above the RM2 would block Bluetooth.
-  The tab puts the antenna beyond the module, so range stays like the Pico 2 W's.
-- **4 layers, 0.8 mm:** layer 1 signals + parts, layer 2 solid GND, layer 3 3V3/VSYS power,
-  layer 4 signals. The bottom side has **no parts** (only the battery stuck on with foam tape),
-  so JLCPCB assembles one side only. No test pads or vias under the battery's sharp edges.
-- **Keep the area under the module's microSD holder clear** (no tall parts) so the holder fits and the
-  card can slide in from the right edge.
-- **Module measurements (from the photo, 7 Oct 2026; confirm with `docs/screen_template_1to1.pdf`):**
-  back view, mm from the module's top-left corner with the header along the top: holes at
-  (2.7, 6.9), (47.3, 6.9), (2.7, 83.0), (47.3, 83.0), about 3 mm diameter, so use M2.5 standoffs;
-  J3 pin 1 (VCC) at (6.0, 2.0), then every 2.54 mm to the right; J4 pin 1 (SD_CS) at (21.19, 82.9),
-  centred; SD card holder on the module's back at x 0–18, y 32.5–60.8, with the card entering from that
-  long edge. On our board everything is mirrored (the module faces down onto it), so J3 pin 1 is on
-  the right and the card slot is on the right-hand long edge.
-- **Measure your module before drawing the outline:** outline, the four hole centres, and the
-  positions of the 14-pin and 4-pin headers (calipers, or a photo against a ruler). The board must
-  match them exactly.
+All positions in mm from the board's **top-left corner**. The screen module sits 1 mm in from the
+left edge and starts 23 mm down, and everything under it is **mirrored**, because the module faces
+down onto our board.
+
+| What | Where |
+|---|---|
+| Board outline | 52 × 109 mm, 3 mm corner radius |
+| **Antenna cut-out** | notch in the right edge, **x 42.5–52, y 4.5–18.5** (9 × 14 mm, open to the edge). No copper on any layer within 2 mm of it |
+| **Pico 2 W** | centre (26.0, 11.5); USB end flush with the **left** edge; pin 1 bottom-left at (1.87, 20.39), pin 40 top-left at (1.87, 2.61) |
+| M2.5 holes (2.7 mm) | (3.7, 29.9), (48.3, 29.9), (3.7, 106.0), (48.3, 106.0) |
+| J3 14-pin socket | pin 1 (VCC) at **(45.0, 25.0)**; pins 2–14 every 2.54 mm to the **left** (pin 14 at 12.0) |
+| J4 4-pin SD socket | pin 1 (SD_CS) at **(29.8, 105.9)**; pins 2–4 to the left (pin 4 at 22.2) |
+| Keep clear (module SD holder) | x 33–51, y 55.5–83.8: nothing taller than 1 mm |
+| J1 USB-C | bottom edge, left (around x 12) |
+| J5 jack | bottom edge, right (around x 38) |
+| SW1, SW2 | left edge, around y 45 and y 60 |
+| Charger, gauge, DAC | anywhere else under the module; DAC near the jack |
+
+- **Antenna:** Raspberry Pi asks for the Pico 2 W to sit at a board edge with a 14 × 9 mm cut-out
+  under its antenna, and no metal around it. The top strip is beyond the screen module, so nothing
+  covers it; keep the case plastic there.
+- **Nothing under the Pico** on our board (except the cut-out). Its micro-USB overhangs the left edge
+  slightly, so the case gets a slot there for programming.
+- **2 layers, 1.6 mm:** top = parts and signals, bottom = mostly solid ground. No parts on the bottom
+  (the battery sticks there with foam tape). No test pads or vias under the battery's edges.
+- **Module measurements** (from the photo, 7 Oct 2026; confirm with `docs/screen_template_1to1.pdf`),
+  back view, mm from the module's top-left corner: holes (2.7, 6.9), (47.3, 6.9), (2.7, 83.0),
+  (47.3, 83.0); J3 pin 1 (6.0, 2.0); J4 pin 1 (21.19, 82.9); SD holder x 0–18, y 32.5–60.8.
+  Board position = (1 + 50 − x, 23 + y).
 
 ## Routing rules
 
-- USB D+/D−: 90 Ω differential pair, short, equal length, over solid ground.
-- RP2350 core regulator, TPS63802 and their inductors: copy the datasheet layouts; keep those
-  loops tiny and away from the DAC.
-- PCM5102A near the jack; analog ground returns kept away from the regulator's switching node.
-- Decoupling capacitor next to every power pin; vias straight down to the ground plane.
-- QSPI (flash + PSRAM) short and close to the RP2350.
-- Ground via stitching along the board edges; none in the antenna keep-out.
-- JLCPCB 4-layer rules: 0.1 mm track/space minimum (use 0.15 mm where there's room), 0.3 mm vias.
-
-## KiCad, step by step
-
-1. Install **KiCad 9**. Open `hardware/pod-pcb/pod-pcb.kicad_pro` from this repo. It already has the
-   five sheets above, each with its checklist printed on the sheet, the 50 × 94 mm board outline,
-   the module and antenna keep-out marked, and JLCPCB-friendly design rules.
-2. Get the RP2350 minimal design KiCad files from Raspberry Pi and copy that circuit into Sheet 2.
-   Get the RM2 footprint and symbol from Raspberry Pi as well.
-3. For other parts, use KiCad's libraries, or **easyeda2kicad** (Python tool) to pull symbol +
-   footprint + 3D model by LCSC number.
-4. Draw **one sheet at a time**, push it to GitHub, and I'll review it against this spec before you
-   move on. Start with Sheet 1, Power.
-5. Run ERC until clean. Assign footprints. Update the PCB from the schematic.
-6. Placement first (connectors, sockets, holes, RM2 fixed by the case), then routing.
-7. DRC clean, check the 3D view, export Gerbers + drill + BOM + CPL, order **assembled** boards at
-   JLCPCB (5 pcs).
-8. Export a STEP model of the board for the case in Fusion 360.
+- Power tracks (`VBUS`, `VSYS`, `VBAT`, `3V3`) **0.5 mm** or wider; signals 0.25 mm.
+- Bottom layer: one solid `GND` pour; top layer: `GND` pour around the parts. Stitch them with vias
+  along the edges, **never inside the antenna keep-out**.
+- Charger capacitors right next to their pins. The 4.7 kΩ / 100 kΩ pull-ups can be anywhere.
+- DAC near the jack, with its own capacitors next to its pins; keep its outputs away from the Pico.
+- JLCPCB 2-layer rules: 0.127 mm track/space minimum, 0.3 mm vias.
 
 ## Bring-up plan
 
-1. **No battery yet.** USB from a USB power meter: check `VSYS`, then flip SW1 and check `3V3`.
-   Current should be small (tens of mA).
-2. Hold BOOTSEL, plug in: the RP2350 drive appears. Flash `pod.uf2` (built for the same pins).
-3. Plug in the screen module: home screen. Then touch, DAC, SD, Bluetooth.
-4. Battery: check polarity, plug in, watch the charger LED/`CHG_N`, then the percentage on screen.
+1. Solder the board **without the Pico and screen**. USB-C from a USB power meter: check `VSYS` is
+   about 4.4 V. Plug in the battery (polarity!) and check it charges (`CHG_N` low).
+2. Solder the Pico. Switch SW1 on: the Pico's 3V3 pin reads 3.3 V. Switch off: 0 V.
+3. Plug the Pico's micro-USB into the laptop (USB-C unplugged), flash `pod.uf2`.
+4. Plug in the screen module: home screen. Then touch, DAC, SD, Bluetooth, battery percentage.
 
 ## Enclosure (after the PCB)
 
-1. Import the board's STEP file, the screen module and battery into Fusion 360.
+1. Import the board's 3D model (EasyEDA → Export → 3D file / STEP), the screen module and the battery
+   into Fusion 360.
 2. Front bezel holds the module's glass; back shell holds the board with the battery underneath
    (leave ~0.5 mm around the cell for swelling); four M2 screws or snap fits.
-3. Openings: USB-C and jack (bottom), SW1 and SW2 (left side), and a microSD slot on the right side
-   at the height of the module's SD holder.
-4. Plastic over the antenna tab (no metal paint or inserts there). PETG or resin prints first,
-   then a nicer final print.
+3. Openings: USB-C and jack (bottom), SW1 and SW2 (left side), micro-USB (left side, top),
+   microSD slot (right side, at the height of the module's SD holder).
+4. Plastic only around the Pico's antenna (top-right corner): no metal paint or inserts.

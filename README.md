@@ -109,7 +109,7 @@ PROGRESS.md dated build log
 
 ## PCB, battery and enclosure
 
-Rev A board: RP2350A + RM2 Bluetooth, the 2.8" screen module on sockets, USB-C charging, 1000 mAh LiPo with fuel gauge, play/pause button and power switch. The design spec is [docs/pcb-plan.md](docs/pcb-plan.md); the KiCad project is in [hardware/pod-pcb](hardware/pod-pcb), and the EasyEDA workflow is in [docs/easyeda-guide.md](docs/easyeda-guide.md).
+Rev A board (being drawn in EasyEDA Pro): a Pico 2 W soldered onto our board, the 2.8" screen module on sockets, USB-C charging, 1000 mAh LiPo with fuel gauge, PCM5102A DAC and headphone jack, play/pause button and power switch. The design spec is [docs/pcb-plan.md](docs/pcb-plan.md) and the EasyEDA workflow is [docs/easyeda-guide.md](docs/easyeda-guide.md). The older KiCad skeleton in `hardware/pod-pcb` was for a bare-RP2350 version and is no longer used.
 
 ## Progress
 
