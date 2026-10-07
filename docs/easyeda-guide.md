@@ -521,17 +521,23 @@ the outline must look like the drawing in the spec, with the notch near the top-
 
 ### G4. Place the fixed parts by typing coordinates
 
-Select each part and type its X / Y and rotation into the right panel:
+EasyEDA positions a part by its **centre**. Set units to **mm**, then check the Y direction: move the
+mouse down from the top-left corner. If Y goes negative, add a minus sign to every Y below.
 
-| Part | Position |
-|---|---|
-| **Pico 2 W** | centre at **(26.0, 11.5)**, rotated so the **USB end is at the left edge**. Pin 1 ends up bottom-left at (1.87, 20.39). Its antenna end sits over the notch |
-| 4 mounting holes (**Place → Hole**, 2.7 mm) | (3.7, 29.9), (48.3, 29.9), (3.7, 106.0), (48.3, 106.0) |
-| J3 (14-pin socket) | pin 1 at **(45.0, 25.0)**, the other pins running to the **left** |
-| J4 (4-pin SD socket) | pin 1 at **(29.8, 105.9)**, the other pins running to the left |
-| J1 USB-C | bottom edge, left, around x 12, with the opening at the edge |
-| J5 jack | bottom edge, right, around x 38 |
-| SW1, SW2 | left edge, around y 45 and y 60, with the slider and button sticking out past the edge |
+| Part | Centre X | Centre Y | Orientation |
+|---|---|---|---|
+| **J6** (Pico pins 1–20) | 26.00 | 20.39 | pins left–right, square pad (pin 1) at the **left** |
+| **J7** (Pico pins 21–40) | 26.00 | 2.61 | pins left–right, square pad at the **right** |
+| **J3** (14-pin screen socket) | 28.49 | 25.00 | pins left–right, square pad at the **right** |
+| **J4** (4-pin SD socket) | 26.00 | 105.90 | pins left–right, square pad at the **right** |
+| Holes (**Place → Hole**, 2.7 mm) | 3.70 / 48.30 | 29.90 / 106.00 | four corners |
+
+**Check:** hovering over each square pad should read J6 (1.87, 20.39), J7 (50.13, 2.61), J3 (45.0, 25.0),
+J4 (29.8, 105.9). If one is off, rotate the part 180° and re-enter its centre.
+
+Edge parts (roughly): USB-C bottom edge at x ≈ 12.5, opening down; jack bottom edge at x ≈ 38, opening
+down; SW1 left edge at y ≈ 45; SW2 left edge at y ≈ 60, button facing out; battery connector left edge
+at y ≈ 85, opening facing out.
 
 Then print `docs/screen_template_1to1.pdf` and lay it against the module to double-check the screen
 positions, and look at **View → 3D**.
