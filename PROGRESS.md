@@ -2,6 +2,17 @@
 
 Newest entries at the top. Each entry: what was done, what broke, what's next.
 
+## 2026-10-08 (later) — Switched to a perfboard build
+
+**Done**
+- JLCPCB quote for the assembled PCB came to about $90, too much for one prototype; the PCB design stays in the repo for later
+- Planned a perfboard version with the same layout and the same Pico pins (`docs/perfboard_build.pdf`): Pico 2 W in sockets at the top, screen on sockets below it, TP4056 USB-C charger and the Adafruit PCM5102 DAC at the bottom edge, 1000 mAh LiPo on the back
+- Power: TP4056 OUT+ → slide switch → 1N5819 → VSYS, so the Pico's USB can stay plugged in for flashing; 100k/100k divider on GP28 for the battery level
+
+**Next**
+- Buy parts, build, test screen/touch/SD on USB power first, then audio, then battery
+- Firmware: read battery voltage on GP28 when no MAX17048 is fitted
+
 ## 2026-10-08 — PCB routed and exported
 
 **Done**
