@@ -8,10 +8,12 @@ Newest entries at the top. Each entry: what was done, what broke, what's next.
 - JLCPCB quote for the assembled PCB came to about $90, too much for one prototype; the PCB design stays in the repo for later
 - Planned a perfboard version with the same layout and the same Pico pins (`docs/perfboard_build.pdf`): Pico 2 W in sockets at the top, screen on sockets below it, TP4056 USB-C charger and the Adafruit PCM5102 DAC at the bottom edge, 1000 mAh LiPo on the back
 - Power: TP4056 OUT+ → slide switch → 1N5819 → VSYS, so the Pico's USB can stay plugged in for flashing; 100k/100k divider on GP28 for the battery level
+- Re-chose the GPIO map so 7 screen pins sit directly under their Pico pins (short solder links instead of wires): on-board wires down from 18 to 11. Display on SPI0 GP4/6/7, CS GP12, DC GP10, RST GP11, LED GP8, T_CS GP5, T_IRQ GP3, SD_CS GP9; DAC DIN GP13, BCK GP14, WSEL GP15. Firmware pins and CMake I2S pins updated; local build passes
+- Firmware reads the battery from the GP28 divider when no MAX17048 answers (percent from a LiPo voltage curve, charging inferred from rising voltage); the optional gauge moved to GP0/GP1
 
 **Next**
 - Buy parts, build, test screen/touch/SD on USB power first, then audio, then battery
-- Firmware: read battery voltage on GP28 when no MAX17048 is fitted
+- Check the battery percentage against a multimeter once the battery is in
 
 ## 2026-10-08 — PCB routed and exported
 

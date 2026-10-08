@@ -25,22 +25,26 @@ The Pico 2 W replaced an earlier ESP32-S3 plan because the ESP32-S3 has no Bluet
 
 ## Wiring
 
+Pins as of the perfboard build (8 Oct 2026); `sdk/common/pod_pins.h` is the source of truth.
+They were re-chosen so 7 screen pins sit directly below their Pico pin on the perfboard;
+see [docs/perfboard_build.pdf](docs/perfboard_build.pdf). The old breadboard layout is in git history.
+
 ### Display + touch (shared SPI0)
 
 | Display pin | Pico 2 W |
 |---|---|
 | VCC | 3V3 (pin 36) |
 | GND | GND |
-| CS | GP17 |
-| RESET | GP21 |
-| DC | GP16 |
-| SDI (MOSI) + T_DIN | GP19 |
-| SCK + T_CLK | GP18 |
-| LED | GP13 |
+| CS | GP12 (pin 16) |
+| RESET | GP11 (pin 15) |
+| DC | GP10 (pin 14) |
+| SDI (MOSI) + T_DIN | GP7 (pin 10) |
+| SCK + T_CLK | GP6 (pin 9) |
+| LED | GP8 (pin 11) |
 | SDO (MISO) | not connected |
-| T_CS | GP22 |
-| T_DO | GP20 |
-| T_IRQ | GP26 |
+| T_CS | GP5 (pin 7) |
+| T_DO | GP4 (pin 6) |
+| T_IRQ | GP3 (pin 5) |
 
 Touch calibration (this board): both axes are reversed. Raw X ≈ 3540 at the left edge and ≈ 565 at the right; raw Y ≈ 3680 at the top and ≈ 380 at the bottom.
 
@@ -49,19 +53,20 @@ Touch calibration (this board): both axes are reversed. Raw X ≈ 3540 at the le
 | DAC pin | Pico 2 W |
 |---|---|
 | VIN | 3V3 (pin 36) |
-| GND | GND (pin 13) |
-| DIN | GP9 |
-| BCK | GP10 |
-| WSEL (LRCK) | GP11 |
+| GND | GND |
+| DIN | GP13 (pin 17) |
+| BCK | GP14 (pin 19) |
+| WSEL (LRCK) | GP15 (pin 20) |
 | MCK, DE, FIL, MU, FM | not connected |
 
 ### microSD (slot on the display module)
 
-SD_CS → GP7; shares GP18 (SCK), GP19 (MOSI) and GP20 (MISO) with the display bus.
+SD_CS → GP9; shares GP6 (SCK), GP7 (MOSI) and GP4 (MISO) with the display bus.
 
-### Battery fuel gauge (optional on the breadboard)
+### Battery
 
-MAX17048: SDA → GP4, SCL → GP5.
+100k/100k divider from the switched battery to GP28 (pin 34), 100 nF across the lower resistor.
+A MAX17048 breakout on GP0 (SDA) / GP1 (SCL) is used instead if fitted.
 
 ## Firmware overview
 

@@ -18,7 +18,7 @@ set(POD_COMMON ${CMAKE_CURRENT_LIST_DIR}/common)
 add_executable(pod_dac_test dac_test/main.c)
 target_include_directories(pod_dac_test PRIVATE ${POD_COMMON})
 target_compile_definitions(pod_dac_test PRIVATE
-    PICO_AUDIO_I2S_DATA_PIN=9 PICO_AUDIO_I2S_CLOCK_PIN_BASE=10)
+    PICO_AUDIO_I2S_DATA_PIN=13 PICO_AUDIO_I2S_CLOCK_PIN_BASE=14)
 target_link_libraries(pod_dac_test PRIVATE pico_stdlib pico_audio_i2s)
 pico_enable_stdio_usb(pod_dac_test 1)
 pico_enable_stdio_uart(pod_dac_test 0)
@@ -46,7 +46,7 @@ add_executable(pod
     common/pod_logo.c               # "SH" monogram, tools/gen_logo.py
     common/pod_wallpaper.c          # home-screen picture in its own flash area (tools/make_wallpaper.py)
     common/pod_spi_lock.c           # display, touch and SD card share SPI0
-    common/pod_battery.c            # MAX17048 fuel gauge + low-battery warning
+    common/pod_battery.c            # battery level (GP28 divider or MAX17048) + low-battery warning
     common/sd_card.c                # SD over SPI
     common/ili9341.c
     common/xpt2046.c
@@ -64,8 +64,8 @@ target_include_directories(pod PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/third_party/minimp3)
 target_compile_definitions(pod PRIVATE
     USING_I2C=1                         # (sic) - upstream name; enables the I2S audio sink
-    PICO_AUDIO_I2S_DATA_PIN=9
-    PICO_AUDIO_I2S_CLOCK_PIN_BASE=10
+    PICO_AUDIO_I2S_DATA_PIN=13
+    PICO_AUDIO_I2S_CLOCK_PIN_BASE=14
     PICO_STACK_SIZE=0x1000              # core 0: 4 KB (fills SCRATCH_Y); MP3 + FatFs need more than 2 KB
     PICO_CORE1_STACK_SIZE=0x800)
 target_link_libraries(pod PRIVATE
@@ -82,6 +82,7 @@ target_link_libraries(pod PRIVATE
     hardware_flash
     hardware_spi
     hardware_i2c
+    hardware_adc
     hardware_dma
     hardware_watchdog)
 pico_enable_stdio_usb(pod 1)    # logs over USB - no UART adapter needed

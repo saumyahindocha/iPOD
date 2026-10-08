@@ -1,5 +1,5 @@
-// pod_battery - battery percentage from a MAX17048 fuel gauge (I2C), plus the
-// low-battery warning. Safe to call when no gauge is fitted: everything reports
+// pod_battery - battery percentage from a MAX17048 fuel gauge (I2C) or, on the
+// perfboard, a 100k/100k divider on GP28; plus the low-battery warning. Safe to call when no gauge is fitted: everything reports
 // "unknown" and the on-screen icon stays hidden.
 #pragma once
 #include <stdbool.h>

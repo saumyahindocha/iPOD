@@ -18,60 +18,57 @@ on real hardware yet**. Your breadboard is the first test.
 Pico 2 W physical pin numbers are in brackets. GND pins: 3, 8, 13, 18, 23, 28, 33, 38.
 **Never use GP23, GP24, GP25 or GP29.** The radio uses them.
 
+Pins changed on 8 Oct 2026 for the perfboard build (7 screen pins sit directly below their
+Pico pin there; see `docs/perfboard_build.pdf`). The breadboard layout is in git history.
+
 ### Display + touch (both on SPI0)
 | Module pin | Pico 2 W | Note |
 |---|---|---|
-| VCC | 3V3 OUT (36) | If the screen is dim or flickers, move to VBUS (40) |
+| VCC | 3V3 OUT (36) | |
 | GND | GND | |
-| CS | GP17 (22) | |
-| RESET | **GP21 (27)** | ⚠ changed (was GP20) |
-| DC | GP16 (21) | |
-| SDI(MOSI) | GP19 (25) | same breadboard row as T_DIN |
-| SCK | GP18 (24) | same breadboard row as T_CLK |
-| LED | GP13 (17) | backlight (PWM dimming later) |
-| SDO(MISO) | **not connected** | ⚠ remove this wire |
-| T_CLK | GP18 (24) | shared with SCK |
-| T_CS | GP22 (29) | |
-| T_DIN | GP19 (25) | shared with SDI |
-| T_DO | **GP20 (26)** | ⚠ changed (was GP21) |
-| T_IRQ | GP26 (31) | |
-
-**Why the two changes:** on the RP2350, SPI0's data-in (RX) can only be on GP0,
-GP4, GP16 or GP20, and GP21 isn't one of them. So T_DO moves to GP20 and RESET
-moves to GP21. They're neighbouring pins (26 and 27), so you just swap the two
-jumpers. The display's own SDO stays disconnected, because on these modules it
-doesn't release the line and would corrupt touch readings on a shared bus.
+| CS | GP12 (16) | |
+| RESET | GP11 (15) | |
+| DC | GP10 (14) | |
+| SDI(MOSI) | GP7 (10) | shared with T_DIN and SD_MOSI |
+| SCK | GP6 (9) | shared with T_CLK and SD_SCK |
+| LED | GP8 (11) | backlight (PWM) |
+| SDO(MISO) | **not connected** | doesn't release the line; would corrupt touch readings |
+| T_CLK | GP6 (9) | shared with SCK |
+| T_CS | GP5 (7) | |
+| T_DIN | GP7 (10) | shared with SDI |
+| T_DO | GP4 (6) | SPI0 RX; shared with SD_MISO |
+| T_IRQ | GP3 (5) | |
 
 ### PCM5102 DAC (Adafruit)
 | DAC pin | Pico 2 W |
 |---|---|
 | VIN | 3V3 OUT (36) |
-| GND | GND (13, next to GP9/GP10) |
-| DIN | GP9 (12) |
-| BCK | GP10 (14) |
-| WSEL | GP11 (15) (must be BCK + 1) |
+| GND | GND |
+| DIN | GP13 (17) |
+| BCK | GP14 (19) |
+| WSEL | GP15 (20) (must be BCK + 1) |
 | MCK, DE, FIL, MU, FM | leave unconnected |
 
-Listening: DAC jack → powered speaker / AUX input (line level). Earbuds work at
-low volume but aren't representative.
+Listening: DAC jack → headphones or a powered speaker (line level).
 
 ### SD card slot (on the back of the display module, shares SPI0)
 | SD pin (4-pin header next to the card slot) | Pico 2 W |
 |---|---|
-| SD_CS | GP7 (10) |
-| SD_SCK | GP18 (24), same row as SCK / T_CLK |
-| SD_MOSI | GP19 (25), same row as SDI / T_DIN |
-| SD_MISO | GP20 (26), same row as T_DO |
+| SD_CS | GP9 (12) |
+| SD_SCK | GP6 (9) |
+| SD_MOSI | GP7 (10) |
+| SD_MISO | GP4 (6) |
 
-### Battery fuel gauge (optional now, built into the PCB later)
-A MAX17048 breakout (SparkFun / Adafruit) with a 1-cell LiPo: SDA → GP4 (6), SCL → GP5 (7),
-3V3, GND, and the cell on its battery connector. Without it, the battery icon stays hidden.
+### Battery level
+Perfboard: 100k/100k divider from the switched battery to GP28 (34), 100 nF across the lower
+resistor; the firmware reads it at start-up if it sees a voltage there. Optional instead: a
+MAX17048 breakout on SDA → GP0 (1), SCL → GP1 (2). With neither, the battery icon stays hidden.
 
 ## 2. Before powering up (5 minutes, prevents most problems)
 1. **Unplug USB.** Multimeter on resistance/continuity: 3V3 (36) to GND must NOT
    beep (no short). VBUS (40) to GND must NOT beep.
 2. Continuity-check every jumper from the module pin to the Pico pin, especially
-   the swapped GP20/GP21 pair and the shared SCK/T_CLK and SDI/T_DIN rows.
+   the shared SCK/T_CLK and SDI/T_DIN connections.
 3. Install a serial monitor: VS Code + Raspberry Pi Pico extension (built-in
    Serial Monitor), PuTTY, or the Arduino IDE Serial Monitor. The Pico appears
    as a COM port once running (any baud setting works over USB).
