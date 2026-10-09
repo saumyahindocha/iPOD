@@ -42,7 +42,7 @@
 #define POD_TOUCH_SPI     POD_SPI
 
 // ---- Battery level ----------------------------------------------------
-// Perfboard: 100k/100k divider from the switched battery to GP28 (ADC2).
+// Perfboard: equal-value divider (100k or 150k each) from the switched battery to GP28 (ADC2).
 // A MAX17048 breakout on I2C0 (GP0/GP1) is still used instead if it answers.
 #define POD_VBAT_ADC_PIN      28   // Pico pin 34, reads battery / 2
 #define POD_VBAT_DIVIDER       2

@@ -54,7 +54,7 @@ static bool adc_probe(void) {
     sleep_ms(2);
     uint32_t node = adc_node_mv();
     gpio_disable_pulls(POD_VBAT_ADC_PIN);
-    return node > 600;                        // divider fitted: well above 0.6 V even with the pull-down
+    return node > 400;                        // divider fitted (100k-150k): >0.6 V even with the pull-down; floating reads ~0
 }
 
 static uint32_t mv_filtered;                   // smoothed battery mV
