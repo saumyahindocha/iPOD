@@ -51,6 +51,12 @@ pico_enable_stdio_usb(pod_touch_setup 1)
 pico_enable_stdio_uart(pod_touch_setup 0)
 pico_add_extra_outputs(pod_touch_setup)
 
+# ------------------------------------------ Pin finder (DAC wiring check)
+add_executable(pod_pin_finder pin_finder/main.c)
+target_include_directories(pod_pin_finder PRIVATE ${POD_COMMON})
+target_link_libraries(pod_pin_finder PRIVATE pico_stdlib)
+pico_add_extra_outputs(pod_pin_finder)
+
 # ----------------------------------------- Pod main firmware (pod.uf2)
 # Home screen -> Phone mode (Bluetooth A2DP sink + album art) or SD card mode
 # (MP3/WAV player). Both use the Poster UI on core 1.
