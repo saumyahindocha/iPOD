@@ -42,6 +42,15 @@ pico_enable_stdio_usb(pod_touch_doctor 1)
 pico_enable_stdio_uart(pod_touch_doctor 0)
 pico_add_extra_outputs(pod_touch_doctor)
 
+# --------------------------------------- Touch setup (calibrate + save)
+add_executable(pod_touch_setup
+    touch_setup/main.c common/ili9341.c common/xpt2046.c common/pod_spi_lock.c)
+target_include_directories(pod_touch_setup PRIVATE ${POD_COMMON})
+target_link_libraries(pod_touch_setup PRIVATE pico_stdlib hardware_spi hardware_flash)
+pico_enable_stdio_usb(pod_touch_setup 1)
+pico_enable_stdio_uart(pod_touch_setup 0)
+pico_add_extra_outputs(pod_touch_setup)
+
 # ----------------------------------------- Pod main firmware (pod.uf2)
 # Home screen -> Phone mode (Bluetooth A2DP sink + album art) or SD card mode
 # (MP3/WAV player). Both use the Poster UI on core 1.
