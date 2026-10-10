@@ -18,7 +18,7 @@ set(POD_COMMON ${CMAKE_CURRENT_LIST_DIR}/common)
 add_executable(pod_dac_test dac_test/main.c)
 target_include_directories(pod_dac_test PRIVATE ${POD_COMMON})
 target_compile_definitions(pod_dac_test PRIVATE
-    PICO_AUDIO_I2S_DATA_PIN=13 PICO_AUDIO_I2S_CLOCK_PIN_BASE=14)
+    PICO_AUDIO_I2S_DATA_PIN=15 PICO_AUDIO_I2S_CLOCK_PIN_BASE=13)
 target_link_libraries(pod_dac_test PRIVATE pico_stdlib pico_audio_i2s)
 pico_enable_stdio_usb(pod_dac_test 1)
 pico_enable_stdio_uart(pod_dac_test 0)
@@ -82,8 +82,8 @@ target_include_directories(pod PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/third_party/minimp3)
 target_compile_definitions(pod PRIVATE
     USING_I2C=1                         # (sic) - upstream name; enables the I2S audio sink
-    PICO_AUDIO_I2S_DATA_PIN=13
-    PICO_AUDIO_I2S_CLOCK_PIN_BASE=14
+    PICO_AUDIO_I2S_DATA_PIN=15
+    PICO_AUDIO_I2S_CLOCK_PIN_BASE=13
     PICO_STACK_SIZE=0x1000              # core 0: 4 KB (fills SCRATCH_Y); MP3 + FatFs need more than 2 KB
     PICO_CORE1_STACK_SIZE=0x800)
 target_link_libraries(pod PRIVATE

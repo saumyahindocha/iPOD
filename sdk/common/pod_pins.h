@@ -11,9 +11,12 @@
 // ---- PCM5102 I2S DAC (PIO0, pico-extras audio_i2s) --------------------
 // BCK must be exactly one GPIO below LRCK (PIO side-set pins are consecutive).
 // Keep PICO_AUDIO_I2S_DATA_PIN / _CLOCK_PIN_BASE in CMakeLists.txt in step.
-#define POD_I2S_DIN_PIN       13   // Pico pin 17 -> DAC DIN
-#define POD_I2S_BCK_PIN       14   // Pico pin 19 -> DAC BCK
-#define POD_I2S_LRCK_PIN      15   // Pico pin 20 -> DAC WSEL   (= BCK + 1)
+// On the built perfboard the three wires reach the DAC rotated (measured 10 Oct:
+// the DAC's BCK pad is fed from pin 17, WSEL from pin 19, DIN from pin 20), so the
+// roles are swapped here instead of resoldering. BCK+1 = LRCK still holds.
+#define POD_I2S_DIN_PIN       15   // Pico pin 20 -> DAC DIN
+#define POD_I2S_BCK_PIN       13   // Pico pin 17 -> DAC BCK
+#define POD_I2S_LRCK_PIN      14   // Pico pin 19 -> DAC WSEL   (= BCK + 1)
 
 // ---- Display + touch share hardware SPI0 ------------------------------
 // SPI0 on GP4 (RX), GP6 (SCK), GP7 (TX). Display SDO stays unconnected.
