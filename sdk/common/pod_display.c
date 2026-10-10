@@ -913,15 +913,42 @@ static void render_home(int pressed) {
     draw_glass_tile(1, pressed == 1);
 }
 
+#include "font8x8_basic.h"
+static void dbg_line(int y, const char *s, uint16_t fg) {
+    static uint16_t g16[16 * 16];
+    char buf[16]; snprintf(buf, sizeof buf, "%-15s", s);
+    for (int i = 0; i < 15; i++) {
+        const unsigned char *g = font8x8_basic[(unsigned char)buf[i] & 0x7F];
+        for (int r = 0; r < 8; r++)
+            for (int b = 0; b < 8; b++) {
+                uint16_t col = (g[r] >> b) & 1 ? fg : 0;
+                g16[(2 * r) * 16 + 2 * b] = g16[(2 * r) * 16 + 2 * b + 1] = col;
+                g16[(2 * r + 1) * 16 + 2 * b] = g16[(2 * r + 1) * 16 + 2 * b + 1] = col;
+            }
+        ili9341_flush(i * 16, y, i * 16 + 15, y + 15, g16);
+    }
+}
+
 pod_source_t pod_display_home(void) {
     cur.battery = mbox.battery;
     cur.charging = mbox.charging;
     render_home(-1);
     blit_all();
     int pressed = -1;
+    int tick = 0;
     while (true) {
         xpt2046_raw_t r;
         int sx, sy;
+        if (++tick % 7 == 0) {                 // live readout at the bottom: IRQ line, raw X/Y/Z
+            xpt2046_raw_t d = {0, 0, 0};
+            bool irq = xpt2046_irq_active();
+            bool ok = xpt2046_read(&d);
+            char b[32];
+            snprintf(b, sizeof b, "IRQ %s  %s", irq ? "LOW " : "HIGH", ok ? "READ" : "----");
+            dbg_line(GFX_H - 36, b, irq ? RGB565(40, 220, 90) : RGB565(150, 150, 150));
+            snprintf(b, sizeof b, "X%4u Y%4u Z%4u", d.x, d.y, d.z);
+            dbg_line(GFX_H - 18, b, ok ? RGB565(40, 220, 90) : RGB565(150, 150, 150));
+        }
         if (xpt2046_irq_active() && xpt2046_read(&r) && map_touch(&r, &sx, &sy)) {
             // Generous hit test: anywhere in the lower half of the screen counts, and the
             // tile is chosen by which side of the screen the finger is on. Also draw a small

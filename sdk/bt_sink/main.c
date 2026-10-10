@@ -51,8 +51,8 @@ int main() {
     // Pod patch: bring up display + touch (first-boot calibration happens here),
     // ask "Phone or SD card?", then hand the screen to core 1.
     pod_display_boot();
-    pod_battery_init();
     pod_source_t source = pod_display_home();
+    pod_battery_init();                         // after the home screen: it must not touch the SPI pins
     if (source == POD_SOURCE_SD) {
         pod_display_set_sd_mode(true);
         pod_display_start();
