@@ -23,6 +23,10 @@ void xpt2046_init(void) {
 
     // SPI0 itself (and SCK/MOSI) is initialised by ili9341_init(); add RX.
     gpio_set_function(POD_SPI_MISO_PIN, GPIO_FUNC_SPI);
+    // Pull MISO up. The touch chip's data line reads all zeros on the perfboard
+    // unless it is pulled up (pod_touch_doctor only got answers in its pulled-up
+    // read): the Pico's default pull-down was winning over a weak T_DO path.
+    gpio_pull_up(POD_SPI_MISO_PIN);
 
     gpio_init(POD_TOUCH_CS_PIN);
     gpio_set_dir(POD_TOUCH_CS_PIN, GPIO_OUT);
