@@ -120,7 +120,7 @@ typedef struct {
     uint32_t check;
 } touch_cal_t;
 
-#define CAL_MAGIC  0x506F6443u                       // "PodC"
+#define CAL_MAGIC  0x506F6444u                       // "PodD" (bumped for the perfboard: forces a fresh calibration once)
 #define CAL_OFFSET (PICO_FLASH_SIZE_BYTES - 8 * FLASH_SECTOR_SIZE)   // well clear of BTstack's keys
 static touch_cal_t cal;
 
@@ -131,7 +131,8 @@ static uint32_t cal_sum(const touch_cal_t *c) {
 
 static bool cal_load(void) {
     const touch_cal_t *f = (const touch_cal_t *)(XIP_BASE + CAL_OFFSET);
-    if (f->magic != CAL_MAGIC || f->check != cal_sum(f) || f->ax_l == f->ax_r || f->ay_t == f->ay_b) return false;
+    if (f->magic != CAL_MAGIC || f->check != cal_sum(f)) return false;
+    if (abs((int)f->ax_r - (int)f->ax_l) < 1000 || abs((int)f->ay_b - (int)f->ay_t) < 1000) return false;   // implausible: redo
     cal = *f;
     return true;
 }
@@ -178,7 +179,13 @@ static xpt2046_raw_t wait_tap(void) {
     }
 }
 
+static void calibrate_once(void);
 static void calibrate(void) {
+    do calibrate_once();
+    while (abs((int)cal.ax_r - (int)cal.ax_l) < 1000 || abs((int)cal.ay_b - (int)cal.ay_t) < 1000);
+}
+
+static void calibrate_once(void) {
     const int tx[4] = {20, 220, 220, 20}, ty[4] = {20, 20, 300, 300};
     xpt2046_raw_t raw[4];
     printf("Pod: touch calibration - tap each dot (fingernail or stylus)\n");
