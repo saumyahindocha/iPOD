@@ -13,7 +13,7 @@
 #define CMD_Z1 0xB0
 #define CMD_Z2 0xC0
 
-#define Z_THRESHOLD 60     // lower = lighter touch; 300 needed a firm press (tuned on hardware 2026-10-07)
+#define Z_THRESHOLD 15     // on Z1 only; untouched Z1 reads ~0, a light touch 30+
 
 void xpt2046_init(void) {
     // An SD card in the slot shares MISO; hold its chip-select high until SD mode uses it.
@@ -64,7 +64,10 @@ static bool sample(xpt2046_raw_t *out) {
     out->y = (uint16_t)ys[2];
     out->z = (uint16_t)(z < 0 ? 0 : z);
     xpt2046_last_z1 = z1; xpt2046_last_z2 = z2;
-    return z1 > 20 && z >= Z_THRESHOLD;
+    // Pressed = Z1 alone. On this board Z2 sits near full scale, so the usual
+    // Z1 + 4095 - Z2 pressure never reached the old threshold even though taps
+    // were real (the T_IRQ-based build registered them, this check rejected them).
+    return z1 >= Z_THRESHOLD;
 }
 
 int xpt2046_last_z1, xpt2046_last_z2;

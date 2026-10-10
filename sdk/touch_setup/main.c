@@ -82,7 +82,7 @@ static sample_t sample(void) {
         if (ys[j] < ys[i]) { int t = ys[i]; ys[i] = ys[j]; ys[j] = t; }
     }
     s.x = xs[2]; s.y = ys[2];
-    s.pressed = s.z1 > 20 && s.z1 + 4095 - s.z2 >= 60;
+    s.pressed = s.z1 >= 15;
     return s;
 }
 static void show_raw(const sample_t *s) {
@@ -167,7 +167,7 @@ int main(void) {
     xpt2046_init();
     while (true) {
         calibrate();
-        bool plausible = abs(cal.ax_r - cal.ax_l) >= 800 && abs(cal.ay_b - cal.ay_t) >= 800;
+        bool plausible = abs(cal.ax_r - cal.ax_l) >= 300 && abs(cal.ay_b - cal.ay_t) >= 300;
 
         // ---- test screen: cross follows the finger; SAVE / REDO buttons
         ili9341_fill(BLACK);

@@ -125,7 +125,7 @@ typedef struct {
 static touch_cal_t cal;
 
 static bool cal_plausible(const touch_cal_t *c) {
-    return abs((int)c->ax_r - (int)c->ax_l) >= 800 && abs((int)c->ay_b - (int)c->ay_t) >= 800;
+    return abs((int)c->ax_r - (int)c->ax_l) >= 300 && abs((int)c->ay_b - (int)c->ay_t) >= 300;
 }
 
 static uint32_t cal_sum(const touch_cal_t *c) {
