@@ -120,7 +120,7 @@ typedef struct {
     uint32_t check;
 } touch_cal_t;
 
-#define CAL_MAGIC  0x506F6443u                       // "PodC"
+#define CAL_MAGIC  0x506F6445u                       // "PodE": ignore the old breadboard calibration still in flash
 #define CAL_OFFSET (PICO_FLASH_SIZE_BYTES - 8 * FLASH_SECTOR_SIZE)   // well clear of BTstack's keys
 static touch_cal_t cal;
 
