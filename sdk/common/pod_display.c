@@ -124,16 +124,8 @@ typedef struct {
 #define CAL_OFFSET (PICO_FLASH_SIZE_BYTES - 8 * FLASH_SECTOR_SIZE)   // well clear of BTstack's keys
 static touch_cal_t cal;
 
-// Built-in calibration measured on this screen (README: raw X 3540 at the left edge,
-// 565 at the right; raw Y 3680 at the top, 380 at the bottom), converted to the
-// x=20/220, y=20/300 reference points. Used whenever no saved calibration is valid.
-static void cal_defaults(void) {
-    cal.swap_xy = 0;
-    cal.ax_l = 3292; cal.ax_r = 813;
-    cal.ay_t = 3474; cal.ay_b = 586;
-}
 static bool cal_plausible(const touch_cal_t *c) {
-    return abs((int)c->ax_r - (int)c->ax_l) >= 1000 && abs((int)c->ay_b - (int)c->ay_t) >= 1000;
+    return abs((int)c->ax_r - (int)c->ax_l) >= 800 && abs((int)c->ay_b - (int)c->ay_t) >= 800;
 }
 
 static uint32_t cal_sum(const touch_cal_t *c) {
@@ -176,28 +168,42 @@ static bool map_touch(const xpt2046_raw_t *r, int *sx, int *sy) {
 static void blit_all(void) { ili9341_blit_be(0, 0, GFX_W, GFX_H, gfx_fb, GFX_W); }
 static void blit_rows(int y, int h) { ili9341_blit_be(0, y, GFX_W, h, gfx_fb, GFX_W); }
 
+// Small square in the top-right corner: green while a touch is seen, grey otherwise.
+static void touch_led(bool on) {
+    ili9341_fill_rect(GFX_W - 18, 6, 12, 12, on ? RGB565(40, 220, 90) : RGB565(90, 90, 96));
+}
+
+// Pressure-only tap capture (same method as pod_touch_setup): wait for a press,
+// collect readings until 6 unpressed samples in a row, wait for a clear lift,
+// return the median position.
 static xpt2046_raw_t wait_tap(void) {
     while (true) {
-        uint32_t sx = 0, sy = 0; int n = 0;
+        uint16_t xs[40], ys[40];
+        int n = 0, off = 0;
         xpt2046_raw_t r;
-        while (!xpt2046_irq_active()) sleep_ms(5);
-        sleep_ms(30);
-        // Collect while pressed; stop on release, or after ~1 s of good readings even if
-        // the IRQ line never reports the release.
-        for (int t = 0; xpt2046_irq_active() && t < 300; t++) {
-            if (n < 64 && xpt2046_read(&r)) { sx += r.x; sy += r.y; n++; }
-            if (n >= 40) break;
+        touch_led(false);
+        while (!xpt2046_irq_active()) sleep_ms(10);
+        touch_led(true);
+        sleep_ms(40);
+        while (off < 6 && n < 40) {
+            if (xpt2046_read(&r)) { xs[n] = r.x; ys[n] = r.y; n++; off = 0; } else off++;
             sleep_ms(10);
         }
-        for (int t = 0; xpt2046_irq_active() && t < 100; t++) sleep_ms(10);
-        sleep_ms(250);
-        if (n >= 3) return (xpt2046_raw_t){ (uint16_t)(sx / n), (uint16_t)(sy / n), 0 };
+        off = 0;
+        while (off < 8) { off = xpt2046_irq_active() ? 0 : off + 1; sleep_ms(10); }
+        touch_led(false);
+        if (n < 4) continue;
+        for (int i = 0; i < n - 1; i++) for (int j = i + 1; j < n; j++) {
+            if (xs[j] < xs[i]) { uint16_t q = xs[i]; xs[i] = xs[j]; xs[j] = q; }
+            if (ys[j] < ys[i]) { uint16_t q = ys[i]; ys[i] = ys[j]; ys[j] = q; }
+        }
+        return (xpt2046_raw_t){ xs[n / 2], ys[n / 2], 0 };
     }
 }
 
 static void calibrate_once(void);
 static void calibrate(void) {
-    for (int attempt = 0; attempt < 2; attempt++) {
+    while (true) {
         calibrate_once();
         if (cal_plausible(&cal)) return;
         printf("Pod: calibration looked wrong (x %ld..%ld, y %ld..%ld), retrying\n",
@@ -208,8 +214,6 @@ static void calibrate(void) {
         blit_all();
         sleep_ms(1500);
     }
-    printf("Pod: using the built-in touch calibration\n");
-    cal_defaults();
 }
 
 static void calibrate_once(void) {
@@ -978,12 +982,12 @@ void pod_display_boot(void) {
     ili9341_init();
     xpt2046_init();
     bool have = cal_load();
-    if (!have) { cal_defaults(); printf("Pod: no saved touch calibration - using the built-in one\n"); }
+
     // Finger held on the screen for 1.5 s at power-up = recalibrate. (A quick tap while the
     // Pod restarts after "Home" must not trigger it.)
     bool force = xpt2046_irq_active();
     for (int i = 0; force && i < 150; i++) { sleep_ms(10); force = xpt2046_irq_active(); }
-    if (force) {
+    if (!have || force) {
         for (int i = 0; xpt2046_irq_active() && i < 300; i++) sleep_ms(10);
         sleep_ms(200);
         calibrate();
