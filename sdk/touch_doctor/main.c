@@ -85,7 +85,7 @@ int main(void) {
         raw4_t dn = read_raw();
         gpio_disable_pulls(POD_SPI_MISO_PIN);
         bool answers = abs((int)up.z1 - (int)dn.z1) < 400 && abs((int)up.z2 - (int)dn.z2) < 400 &&
-                       !(up.z1 == 0 && up.z2 == 0) && !(up.z1 == 4095 && up.z2 == 4095);
+                       !(up.z1 == 0 && up.z2 == 0) && up.z1 <= 4095 && up.z2 <= 4095 && up.x <= 4095;
 
         int z = (int)up.z1 + 4095 - (int)up.z2;
         bool pressed_reading = answers && up.z1 > 30;

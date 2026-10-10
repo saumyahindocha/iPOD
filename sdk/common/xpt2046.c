@@ -48,7 +48,9 @@ bool xpt2046_read(xpt2046_raw_t *out) {
     gpio_put(POD_TOUCH_CS_PIN, 0);
     uint16_t z1 = xfer(CMD_Z1), z2 = xfer(CMD_Z2);
     int z = (int)z1 + 4095 - (int)z2;
-    bool ok = z1 >= 15;   // Z1 alone: Z2 is unreliable on the perfboard, so z stayed below the old threshold
+    // Z1 alone (Z2 is unreliable on this board). Values above 4095 are impossible for a
+    // 12-bit reading: they mean the data line is open and just follows the Pico's pull-up.
+    bool ok = z1 >= 15 && z1 <= 4095 && z2 <= 4095;
     uint16_t xs[4], ys[4];
     if (ok) {
         xfer(CMD_X);
