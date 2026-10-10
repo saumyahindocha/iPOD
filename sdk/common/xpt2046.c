@@ -33,7 +33,25 @@ void xpt2046_init(void) {
     gpio_pull_up(POD_TOUCH_IRQ_PIN);
 }
 
-bool xpt2046_irq_active(void) { return !gpio_get(POD_TOUCH_IRQ_PIN); }
+static uint16_t xfer(uint8_t cmd);
+
+// "Is the screen being pressed?" - decided from the touch pressure reading, not
+// the T_IRQ line alone. On the perfboard T_IRQ can go low on a press but not come
+// back high reliably, which froze taps (nothing ever "released") and the touch
+// setup. Pressure works with or without T_IRQ.
+bool xpt2046_irq_active(void) {
+    pod_spi_lock();
+    spi_set_baudrate(POD_SPI, POD_TOUCH_BAUD);
+    gpio_put(POD_TOUCH_CS_PIN, 0);
+    int z1 = xfer(CMD_Z1), z2 = xfer(CMD_Z2);
+    xfer(0x80);
+    gpio_put(POD_TOUCH_CS_PIN, 1);
+    spi_set_baudrate(POD_SPI, POD_TFT_BAUD);
+    pod_spi_unlock();
+    return z1 > 20 && z1 + 4095 - z2 >= Z_THRESHOLD;
+}
+
+bool xpt2046_irq_line_low(void) { return !gpio_get(POD_TOUCH_IRQ_PIN); }
 
 static uint16_t xfer(uint8_t cmd) {
     uint8_t tx[3] = { cmd, 0, 0 }, rx[3];
@@ -47,7 +65,7 @@ bool xpt2046_read(xpt2046_raw_t *out) {
     gpio_put(POD_TOUCH_CS_PIN, 0);
     uint16_t z1 = xfer(CMD_Z1), z2 = xfer(CMD_Z2);
     int z = (int)z1 + 4095 - (int)z2;
-    bool ok = z >= Z_THRESHOLD;
+    bool ok = z1 > 20 && z >= Z_THRESHOLD;
     uint16_t xs[4], ys[4];
     if (ok) {
         xfer(CMD_X);

@@ -7,5 +7,6 @@
 typedef struct { uint16_t x, y, z; } xpt2046_raw_t;
 
 void xpt2046_init(void);
-bool xpt2046_irq_active(void);            // true while panel is pressed (T_IRQ low)
+bool xpt2046_irq_active(void);            // true while the panel is pressed (from the pressure reading)
+bool xpt2046_irq_line_low(void);          // raw T_IRQ line level (low = pressed), for diagnostics
 bool xpt2046_read(xpt2046_raw_t *out);    // averaged read; false if pressure too low

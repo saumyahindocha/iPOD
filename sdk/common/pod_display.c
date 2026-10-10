@@ -120,9 +120,21 @@ typedef struct {
     uint32_t check;
 } touch_cal_t;
 
-#define CAL_MAGIC  0x506F6444u                       // "PodD" (bumped for the perfboard: forces a fresh calibration once)
+#define CAL_MAGIC  0x506F6444u                       // "PodD" (bumped for the perfboard: old breadboard values are ignored)
 #define CAL_OFFSET (PICO_FLASH_SIZE_BYTES - 8 * FLASH_SECTOR_SIZE)   // well clear of BTstack's keys
 static touch_cal_t cal;
+
+// Built-in calibration measured on this screen (README: raw X 3540 at the left edge,
+// 565 at the right; raw Y 3680 at the top, 380 at the bottom), converted to the
+// x=20/220, y=20/300 reference points. Used whenever no saved calibration is valid.
+static void cal_defaults(void) {
+    cal.swap_xy = 0;
+    cal.ax_l = 3292; cal.ax_r = 813;
+    cal.ay_t = 3474; cal.ay_b = 586;
+}
+static bool cal_plausible(const touch_cal_t *c) {
+    return abs((int)c->ax_r - (int)c->ax_l) >= 1000 && abs((int)c->ay_b - (int)c->ay_t) >= 1000;
+}
 
 static uint32_t cal_sum(const touch_cal_t *c) {
     return c->magic ^ (uint32_t)c->swap_xy * 0x9E3779B9u ^ (uint32_t)c->ax_l ^ ((uint32_t)c->ax_r << 8) ^
@@ -132,7 +144,7 @@ static uint32_t cal_sum(const touch_cal_t *c) {
 static bool cal_load(void) {
     const touch_cal_t *f = (const touch_cal_t *)(XIP_BASE + CAL_OFFSET);
     if (f->magic != CAL_MAGIC || f->check != cal_sum(f)) return false;
-    if (abs((int)f->ax_r - (int)f->ax_l) < 1000 || abs((int)f->ay_b - (int)f->ay_t) < 1000) return false;   // implausible: redo
+    if (!cal_plausible(f)) return false;
     cal = *f;
     return true;
 }
@@ -170,19 +182,34 @@ static xpt2046_raw_t wait_tap(void) {
         xpt2046_raw_t r;
         while (!xpt2046_irq_active()) sleep_ms(5);
         sleep_ms(30);
-        while (xpt2046_irq_active()) {
+        // Collect while pressed; stop on release, or after ~1 s of good readings even if
+        // the IRQ line never reports the release.
+        for (int t = 0; xpt2046_irq_active() && t < 300; t++) {
             if (n < 64 && xpt2046_read(&r)) { sx += r.x; sy += r.y; n++; }
+            if (n >= 40) break;
             sleep_ms(10);
         }
-        sleep_ms(150);
+        for (int t = 0; xpt2046_irq_active() && t < 100; t++) sleep_ms(10);
+        sleep_ms(250);
         if (n >= 3) return (xpt2046_raw_t){ (uint16_t)(sx / n), (uint16_t)(sy / n), 0 };
     }
 }
 
 static void calibrate_once(void);
 static void calibrate(void) {
-    do calibrate_once();
-    while (abs((int)cal.ax_r - (int)cal.ax_l) < 1000 || abs((int)cal.ay_b - (int)cal.ay_t) < 1000);
+    for (int attempt = 0; attempt < 2; attempt++) {
+        calibrate_once();
+        if (cal_plausible(&cal)) return;
+        printf("Pod: calibration looked wrong (x %ld..%ld, y %ld..%ld), retrying\n",
+               (long)cal.ax_l, (long)cal.ax_r, (long)cal.ay_t, (long)cal.ay_b);
+        gfx_fill_rect(0, 0, GFX_W, GFX_H, IDLE_BASE);
+        gfx_text(&pod_font_title, 120, 140, "Let's try again", WHITE, 1);
+        gfx_text(&pod_font_body, 120, 170, "Tap each dot's centre", (rgb_t){190, 190, 196}, 1);
+        blit_all();
+        sleep_ms(1500);
+    }
+    printf("Pod: using the built-in touch calibration\n");
+    cal_defaults();
 }
 
 static void calibrate_once(void) {
@@ -951,12 +978,14 @@ void pod_display_boot(void) {
     ili9341_init();
     xpt2046_init();
     bool have = cal_load();
+    if (!have) { cal_defaults(); printf("Pod: no saved touch calibration - using the built-in one\n"); }
     // Finger held on the screen for 1.5 s at power-up = recalibrate. (A quick tap while the
     // Pod restarts after "Home" must not trigger it.)
     bool force = xpt2046_irq_active();
     for (int i = 0; force && i < 150; i++) { sleep_ms(10); force = xpt2046_irq_active(); }
-    if (!have || force) {
-        if (force) { while (xpt2046_irq_active()) sleep_ms(10); sleep_ms(200); }
+    if (force) {
+        for (int i = 0; xpt2046_irq_active() && i < 300; i++) sleep_ms(10);
+        sleep_ms(200);
         calibrate();
         cal_save();
     } else {
