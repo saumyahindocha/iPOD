@@ -2,6 +2,23 @@
 
 Newest entries at the top. Each entry: what was done, what broke, what's next.
 
+## 2026-10-10 — Perfboard build under way
+
+**Done**
+- Started soldering the perfboard: screen sockets in and the screen fitted, DAC mounted under the screen with its jack at the board edge
+- Got the DAC's real pin order from Adafruit's own board files (two rows: DE/FIL/MCK/MU/FM/3V, and VIN/GND/WSEL/DIN/BCK/Lout/G/Rout) and matched it to photos of the build
+- DAC added to the main perfboard guide: pins in holes N34–N39 and T35–T40, five numbered wires (12–16) to Pico pins 36, 18, 20, 17, 19; hole map and front view updated. Multimeter check before wiring: N35 (GND) must beep to the jack's sleeve
+- Battery divider now uses two 150 kΩ resistors (on hand); firmware detection threshold lowered so 100–150 kΩ dividers are found even on a low battery. Local build passes
+- Repo tidy-up: `hardware/pod-pcb-easyeda/` holds the finished PCB design (schematic, assembly drawing, 1:1 fit test, Gerbers with the outline fix, BOM, pick-and-place) so it can be ordered later; `hardware/perfboard/` holds the DAC sheet and the scripts that draw the build guide
+
+**Notes**
+- Spare 10 µF / 100 µF electrolytics aren't suitable for the 100 nF filter on the battery divider (their leakage would read the battery low); buy a 100 nF ceramic or leave it out
+
+**Next**
+- Finish the 7 links and wires 1–11, test screen, touch and SD on USB power
+- Solder the DAC pins, check N35 to the jack sleeve, then wires 12–16 and test audio
+- TP4056, switch and battery last, after the continuity checks in the guide
+
 ## 2026-10-08 (later) — Switched to a perfboard build
 
 **Done**
