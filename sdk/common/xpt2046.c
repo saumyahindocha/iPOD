@@ -23,6 +23,7 @@ void xpt2046_init(void) {
 
     // SPI0 itself (and SCK/MOSI) is initialised by ili9341_init(); add RX.
     gpio_set_function(POD_SPI_MISO_PIN, GPIO_FUNC_SPI);
+    gpio_pull_up(POD_SPI_MISO_PIN);   // perfboard: the touch data line reads all zeros without this
 
     gpio_init(POD_TOUCH_CS_PIN);
     gpio_set_dir(POD_TOUCH_CS_PIN, GPIO_OUT);
@@ -47,7 +48,7 @@ bool xpt2046_read(xpt2046_raw_t *out) {
     gpio_put(POD_TOUCH_CS_PIN, 0);
     uint16_t z1 = xfer(CMD_Z1), z2 = xfer(CMD_Z2);
     int z = (int)z1 + 4095 - (int)z2;
-    bool ok = z >= Z_THRESHOLD;
+    bool ok = z1 >= 15;   // Z1 alone: Z2 is unreliable on the perfboard, so z stayed below the old threshold
     uint16_t xs[4], ys[4];
     if (ok) {
         xfer(CMD_X);
