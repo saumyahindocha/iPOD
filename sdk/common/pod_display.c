@@ -168,6 +168,31 @@ static bool map_touch(const xpt2046_raw_t *r, int *sx, int *sy) {
 static void blit_all(void) { ili9341_blit_be(0, 0, GFX_W, GFX_H, gfx_fb, GFX_W); }
 static void blit_rows(int y, int h) { ili9341_blit_be(0, y, GFX_W, h, gfx_fb, GFX_W); }
 
+#include "font8x8_basic.h"
+// Live raw touch readout at the bottom of the setup screen (same as pod_touch_setup).
+static void raw_char(int x, int y, char c, uint16_t fg) {
+    static uint16_t g16[16 * 16];
+    const unsigned char *g = font8x8_basic[(unsigned char)c & 0x7F];
+    for (int r = 0; r < 8; r++)
+        for (int b = 0; b < 8; b++) {
+            uint16_t col = (g[r] >> b) & 1 ? fg : 0;
+            g16[(2 * r) * 16 + 2 * b] = g16[(2 * r) * 16 + 2 * b + 1] = col;
+            g16[(2 * r + 1) * 16 + 2 * b] = g16[(2 * r + 1) * 16 + 2 * b + 1] = col;
+        }
+    ili9341_flush(x, y, x + 15, y + 15, g16);
+}
+static void raw_line(int y, const char *s, uint16_t fg) {
+    char buf[16]; snprintf(buf, sizeof buf, "%-15s", s);
+    for (int i = 0; i < 15; i++) raw_char(i * 16, y, buf[i], fg);
+}
+static void show_raw(const xpt2046_raw_t *r, bool pressed) {
+    char b[32];
+    snprintf(b, sizeof b, "X%4u Y%4u", r->x, r->y);
+    raw_line(GFX_H - 36, b, RGB565(150, 150, 150));
+    snprintf(b, sizeof b, "Z%4d %4d %s", xpt2046_last_z1, xpt2046_last_z2, pressed ? "ON" : "--");
+    raw_line(GFX_H - 18, b, pressed ? RGB565(40, 220, 90) : RGB565(150, 150, 150));
+}
+
 // Small square in the top-right corner: green while a touch is seen, grey otherwise.
 static void touch_led(bool on) {
     ili9341_fill_rect(GFX_W - 18, 6, 12, 12, on ? RGB565(40, 220, 90) : RGB565(90, 90, 96));
@@ -182,7 +207,13 @@ static xpt2046_raw_t wait_tap(void) {
         int n = 0, off = 0;
         xpt2046_raw_t r;
         touch_led(false);
-        while (!xpt2046_irq_active()) sleep_ms(10);
+        for (int k = 0; ; k++) {
+            xpt2046_raw_t s;
+            bool p = xpt2046_sample_raw(&s);
+            if (k % 5 == 0 || p) show_raw(&s, p);
+            if (p) break;
+            sleep_ms(10);
+        }
         touch_led(true);
         sleep_ms(40);
         while (off < 6 && n < 40) {

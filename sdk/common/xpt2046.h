@@ -10,3 +10,5 @@ void xpt2046_init(void);
 bool xpt2046_irq_active(void);            // true while the panel is pressed (from the pressure reading)
 bool xpt2046_irq_line_low(void);          // raw T_IRQ line level (low = pressed), for diagnostics
 bool xpt2046_read(xpt2046_raw_t *out);    // averaged read; false if pressure too low
+bool xpt2046_sample_raw(xpt2046_raw_t *out); // always fills x/y/z; returns pressed
+extern int xpt2046_last_z1, xpt2046_last_z2; // from the latest sample (diagnostics)
