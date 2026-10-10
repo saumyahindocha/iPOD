@@ -74,7 +74,7 @@ int main(void) {
     int low_count = 0, xmin = 4095, xmax = 0;
     bool was_low = false;
     while (true) {
-        bool low = xpt2046_irq_line_low();
+        bool low = !gpio_get(POD_TOUCH_IRQ_PIN);
         if (low && !was_low) low_count++;
         was_low = low;
 

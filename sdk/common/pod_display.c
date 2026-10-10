@@ -120,13 +120,9 @@ typedef struct {
     uint32_t check;
 } touch_cal_t;
 
-#define CAL_MAGIC  0x506F6444u                       // "PodD" (bumped for the perfboard: old breadboard values are ignored)
+#define CAL_MAGIC  0x506F6443u                       // "PodC"
 #define CAL_OFFSET (PICO_FLASH_SIZE_BYTES - 8 * FLASH_SECTOR_SIZE)   // well clear of BTstack's keys
 static touch_cal_t cal;
-
-static bool cal_plausible(const touch_cal_t *c) {
-    return abs((int)c->ax_r - (int)c->ax_l) >= 300 && abs((int)c->ay_b - (int)c->ay_t) >= 300;
-}
 
 static uint32_t cal_sum(const touch_cal_t *c) {
     return c->magic ^ (uint32_t)c->swap_xy * 0x9E3779B9u ^ (uint32_t)c->ax_l ^ ((uint32_t)c->ax_r << 8) ^
@@ -135,8 +131,7 @@ static uint32_t cal_sum(const touch_cal_t *c) {
 
 static bool cal_load(void) {
     const touch_cal_t *f = (const touch_cal_t *)(XIP_BASE + CAL_OFFSET);
-    if (f->magic != CAL_MAGIC || f->check != cal_sum(f)) return false;
-    if (!cal_plausible(f)) return false;
+    if (f->magic != CAL_MAGIC || f->check != cal_sum(f) || f->ax_l == f->ax_r || f->ay_t == f->ay_b) return false;
     cal = *f;
     return true;
 }
@@ -168,86 +163,22 @@ static bool map_touch(const xpt2046_raw_t *r, int *sx, int *sy) {
 static void blit_all(void) { ili9341_blit_be(0, 0, GFX_W, GFX_H, gfx_fb, GFX_W); }
 static void blit_rows(int y, int h) { ili9341_blit_be(0, y, GFX_W, h, gfx_fb, GFX_W); }
 
-#include "font8x8_basic.h"
-// Live raw touch readout at the bottom of the setup screen (same as pod_touch_setup).
-static void raw_char(int x, int y, char c, uint16_t fg) {
-    static uint16_t g16[16 * 16];
-    const unsigned char *g = font8x8_basic[(unsigned char)c & 0x7F];
-    for (int r = 0; r < 8; r++)
-        for (int b = 0; b < 8; b++) {
-            uint16_t col = (g[r] >> b) & 1 ? fg : 0;
-            g16[(2 * r) * 16 + 2 * b] = g16[(2 * r) * 16 + 2 * b + 1] = col;
-            g16[(2 * r + 1) * 16 + 2 * b] = g16[(2 * r + 1) * 16 + 2 * b + 1] = col;
-        }
-    ili9341_flush(x, y, x + 15, y + 15, g16);
-}
-static void raw_line(int y, const char *s, uint16_t fg) {
-    char buf[16]; snprintf(buf, sizeof buf, "%-15s", s);
-    for (int i = 0; i < 15; i++) raw_char(i * 16, y, buf[i], fg);
-}
-static void show_raw(const xpt2046_raw_t *r, bool pressed) {
-    char b[32];
-    snprintf(b, sizeof b, "X%4u Y%4u", r->x, r->y);
-    raw_line(GFX_H - 36, b, RGB565(150, 150, 150));
-    snprintf(b, sizeof b, "Z%4d %4d %s", xpt2046_last_z1, xpt2046_last_z2, pressed ? "ON" : "--");
-    raw_line(GFX_H - 18, b, pressed ? RGB565(40, 220, 90) : RGB565(150, 150, 150));
-}
-
-// Small square in the top-right corner: green while a touch is seen, grey otherwise.
-static void touch_led(bool on) {
-    ili9341_fill_rect(GFX_W - 18, 6, 12, 12, on ? RGB565(40, 220, 90) : RGB565(90, 90, 96));
-}
-
-// Pressure-only tap capture (same method as pod_touch_setup): wait for a press,
-// collect readings until 6 unpressed samples in a row, wait for a clear lift,
-// return the median position.
 static xpt2046_raw_t wait_tap(void) {
     while (true) {
-        uint16_t xs[40], ys[40];
-        int n = 0, off = 0;
+        uint32_t sx = 0, sy = 0; int n = 0;
         xpt2046_raw_t r;
-        touch_led(false);
-        for (int k = 0; ; k++) {
-            xpt2046_raw_t s;
-            bool p = xpt2046_sample_raw(&s);
-            if (k % 5 == 0 || p) show_raw(&s, p);
-            if (p) break;
+        while (!xpt2046_irq_active()) sleep_ms(5);
+        sleep_ms(30);
+        while (xpt2046_irq_active()) {
+            if (n < 64 && xpt2046_read(&r)) { sx += r.x; sy += r.y; n++; }
             sleep_ms(10);
         }
-        touch_led(true);
-        sleep_ms(40);
-        while (off < 6 && n < 40) {
-            if (xpt2046_read(&r)) { xs[n] = r.x; ys[n] = r.y; n++; off = 0; } else off++;
-            sleep_ms(10);
-        }
-        off = 0;
-        while (off < 8) { off = xpt2046_irq_active() ? 0 : off + 1; sleep_ms(10); }
-        touch_led(false);
-        if (n < 4) continue;
-        for (int i = 0; i < n - 1; i++) for (int j = i + 1; j < n; j++) {
-            if (xs[j] < xs[i]) { uint16_t q = xs[i]; xs[i] = xs[j]; xs[j] = q; }
-            if (ys[j] < ys[i]) { uint16_t q = ys[i]; ys[i] = ys[j]; ys[j] = q; }
-        }
-        return (xpt2046_raw_t){ xs[n / 2], ys[n / 2], 0 };
+        sleep_ms(150);
+        if (n >= 3) return (xpt2046_raw_t){ (uint16_t)(sx / n), (uint16_t)(sy / n), 0 };
     }
 }
 
-static void calibrate_once(void);
 static void calibrate(void) {
-    while (true) {
-        calibrate_once();
-        if (cal_plausible(&cal)) return;
-        printf("Pod: calibration looked wrong (x %ld..%ld, y %ld..%ld), retrying\n",
-               (long)cal.ax_l, (long)cal.ax_r, (long)cal.ay_t, (long)cal.ay_b);
-        gfx_fill_rect(0, 0, GFX_W, GFX_H, IDLE_BASE);
-        gfx_text(&pod_font_title, 120, 140, "Let's try again", WHITE, 1);
-        gfx_text(&pod_font_body, 120, 170, "Tap each dot's centre", (rgb_t){190, 190, 196}, 1);
-        blit_all();
-        sleep_ms(1500);
-    }
-}
-
-static void calibrate_once(void) {
     const int tx[4] = {20, 220, 220, 20}, ty[4] = {20, 20, 300, 300};
     xpt2046_raw_t raw[4];
     printf("Pod: touch calibration - tap each dot (fingernail or stylus)\n");
@@ -988,20 +919,9 @@ pod_source_t pod_display_home(void) {
     render_home(-1);
     blit_all();
     int pressed = -1;
-    int dbg = 0;
     while (true) {
         xpt2046_raw_t r;
         int sx, sy;
-        // Debug readout (bottom of the home screen): raw touch numbers and the mapped position.
-        if (++dbg % 6 == 0) {
-            xpt2046_raw_t d; bool p = xpt2046_sample_raw(&d);
-            int mx = -1, my = -1; if (p) map_touch(&d, &mx, &my);
-            char b[32];
-            snprintf(b, sizeof b, "X%4u Y%4u %s", d.x, d.y, p ? "ON" : "--");
-            raw_line(GFX_H - 36, b, p ? RGB565(40, 220, 90) : RGB565(150, 150, 150));
-            snprintf(b, sizeof b, "Z%4d %4d>%3d,%3d", xpt2046_last_z1, xpt2046_last_z2, mx, my);
-            raw_line(GFX_H - 18, b, RGB565(150, 150, 150));
-        }
         if (xpt2046_irq_active() && xpt2046_read(&r) && map_touch(&r, &sx, &sy)) {
             int p = -1;
             if (sy >= HOME_TILE_Y - 6 && sy < HOME_TILE_Y + HOME_TILE_H + 6)
@@ -1024,14 +944,12 @@ void pod_display_boot(void) {
     ili9341_init();
     xpt2046_init();
     bool have = cal_load();
-
     // Finger held on the screen for 1.5 s at power-up = recalibrate. (A quick tap while the
     // Pod restarts after "Home" must not trigger it.)
     bool force = xpt2046_irq_active();
     for (int i = 0; force && i < 150; i++) { sleep_ms(10); force = xpt2046_irq_active(); }
     if (!have || force) {
-        for (int i = 0; xpt2046_irq_active() && i < 300; i++) sleep_ms(10);
-        sleep_ms(200);
+        if (force) { while (xpt2046_irq_active()) sleep_ms(10); sleep_ms(200); }
         calibrate();
         cal_save();
     } else {
