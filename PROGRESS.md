@@ -2,6 +2,22 @@
 
 Newest entries at the top. Each entry: what was done, what broke, what's next.
 
+## 2026-10-10 (later) — Device built and touch working
+
+**Done**
+- Whole perfboard built in one night: Pico, screen, DAC, links and wires; powered from the Pico's USB until the battery arrives (TP4056 and battery not fitted yet, firmware hides the battery icon)
+- Firmware boots to the home screen on the new pin map; touch now works after a fresh 4-dot calibration
+
+**Fixed**
+- Touch read nothing: the data link from Pico pin 6 (GP4) to the screen's T_DO (perfboard holes F8–F9–F10) was open. The pressed signal (T_IRQ) worked, so the setup dots "accepted" garbage readings (all 0 or all 8191) and the home screen rightly refused the resulting calibration. Found by printing the raw readings on the screen; fixed by resoldering the link
+- Firmware hardening from the hunt: MISO pulled up; a tap counts on Z1 alone (Z2 unreliable here); readings above 4095 rejected as "line open"; new calibration magic so the stale breadboard calibration is ignored; battery init runs after the home screen
+- Two diagnostic firmwares added: `pod_touch_doctor` (names the wire to check) and `pod_touch_setup` (calibrate with live raw numbers, test, save)
+
+**Next**
+- Test SD playback and Bluetooth from the phone
+- Software design updates and new features (Ash's list)
+- Fit the TP4056, switch and battery when they arrive
+
 ## 2026-10-10 — Perfboard build under way
 
 **Done**

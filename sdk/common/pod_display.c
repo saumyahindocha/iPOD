@@ -913,49 +913,20 @@ static void render_home(int pressed) {
     draw_glass_tile(1, pressed == 1);
 }
 
-#include "font8x8_basic.h"
-static void dbg_line(int y, const char *s, uint16_t fg) {
-    static uint16_t g16[16 * 16];
-    char buf[16]; snprintf(buf, sizeof buf, "%-15s", s);
-    for (int i = 0; i < 15; i++) {
-        const unsigned char *g = font8x8_basic[(unsigned char)buf[i] & 0x7F];
-        for (int r = 0; r < 8; r++)
-            for (int b = 0; b < 8; b++) {
-                uint16_t col = (g[r] >> b) & 1 ? fg : 0;
-                g16[(2 * r) * 16 + 2 * b] = g16[(2 * r) * 16 + 2 * b + 1] = col;
-                g16[(2 * r + 1) * 16 + 2 * b] = g16[(2 * r + 1) * 16 + 2 * b + 1] = col;
-            }
-        ili9341_flush(i * 16, y, i * 16 + 15, y + 15, g16);
-    }
-}
-
 pod_source_t pod_display_home(void) {
     cur.battery = mbox.battery;
     cur.charging = mbox.charging;
     render_home(-1);
     blit_all();
     int pressed = -1;
-    int tick = 0;
     while (true) {
         xpt2046_raw_t r;
         int sx, sy;
-        if (++tick % 7 == 0) {                 // live readout at the bottom: IRQ line, raw X/Y/Z
-            xpt2046_raw_t d = {0, 0, 0};
-            bool irq = xpt2046_irq_active();
-            bool ok = xpt2046_read(&d);
-            char b[32];
-            snprintf(b, sizeof b, "IRQ %s  %s", irq ? "LOW " : "HIGH", ok ? "READ" : "----");
-            dbg_line(GFX_H - 36, b, irq ? RGB565(40, 220, 90) : RGB565(150, 150, 150));
-            snprintf(b, sizeof b, "X%4u Y%4u Z%4u", d.x, d.y, d.z);
-            dbg_line(GFX_H - 18, b, ok ? RGB565(40, 220, 90) : RGB565(150, 150, 150));
-        }
         if (xpt2046_irq_active() && xpt2046_read(&r) && map_touch(&r, &sx, &sy)) {
-            // Generous hit test: anywhere in the lower half of the screen counts, and the
-            // tile is chosen by which side of the screen the finger is on. Also draw a small
-            // marker where the touch landed, so a mis-calibration is visible.
             int p = -1;
-            if (sy >= 120) p = sx < GFX_W / 2 ? 0 : 1;
-            ili9341_fill_rect(sx - 3, sy - 3, 7, 7, RGB565(255, 255, 255));
+            if (sy >= HOME_TILE_Y - 6 && sy < HOME_TILE_Y + HOME_TILE_H + 6)
+                for (int t = 0; t < 2; t++)
+                    if (sx >= home_tile_x[t] - 4 && sx < home_tile_x[t] + HOME_TILE_W + 4) p = t;
             if (p != pressed) { pressed = p; render_home(pressed); blit_all(); }
         } else if (!xpt2046_irq_active() && pressed >= 0) {
             pod_source_t src = pressed == 0 ? POD_SOURCE_PHONE : POD_SOURCE_SD;
