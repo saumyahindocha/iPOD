@@ -988,9 +988,20 @@ pod_source_t pod_display_home(void) {
     render_home(-1);
     blit_all();
     int pressed = -1;
+    int dbg = 0;
     while (true) {
         xpt2046_raw_t r;
         int sx, sy;
+        // Debug readout (bottom of the home screen): raw touch numbers and the mapped position.
+        if (++dbg % 6 == 0) {
+            xpt2046_raw_t d; bool p = xpt2046_sample_raw(&d);
+            int mx = -1, my = -1; if (p) map_touch(&d, &mx, &my);
+            char b[32];
+            snprintf(b, sizeof b, "X%4u Y%4u %s", d.x, d.y, p ? "ON" : "--");
+            raw_line(GFX_H - 36, b, p ? RGB565(40, 220, 90) : RGB565(150, 150, 150));
+            snprintf(b, sizeof b, "Z%4d %4d>%3d,%3d", xpt2046_last_z1, xpt2046_last_z2, mx, my);
+            raw_line(GFX_H - 18, b, RGB565(150, 150, 150));
+        }
         if (xpt2046_irq_active() && xpt2046_read(&r) && map_touch(&r, &sx, &sy)) {
             int p = -1;
             if (sy >= HOME_TILE_Y - 6 && sy < HOME_TILE_Y + HOME_TILE_H + 6)
