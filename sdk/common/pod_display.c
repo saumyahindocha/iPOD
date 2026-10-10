@@ -923,10 +923,12 @@ pod_source_t pod_display_home(void) {
         xpt2046_raw_t r;
         int sx, sy;
         if (xpt2046_irq_active() && xpt2046_read(&r) && map_touch(&r, &sx, &sy)) {
+            // Generous hit test: anywhere in the lower half of the screen counts, and the
+            // tile is chosen by which side of the screen the finger is on. Also draw a small
+            // marker where the touch landed, so a mis-calibration is visible.
             int p = -1;
-            if (sy >= HOME_TILE_Y - 6 && sy < HOME_TILE_Y + HOME_TILE_H + 6)
-                for (int t = 0; t < 2; t++)
-                    if (sx >= home_tile_x[t] - 4 && sx < home_tile_x[t] + HOME_TILE_W + 4) p = t;
+            if (sy >= 120) p = sx < GFX_W / 2 ? 0 : 1;
+            ili9341_fill_rect(sx - 3, sy - 3, 7, 7, RGB565(255, 255, 255));
             if (p != pressed) { pressed = p; render_home(pressed); blit_all(); }
         } else if (!xpt2046_irq_active() && pressed >= 0) {
             pod_source_t src = pressed == 0 ? POD_SOURCE_PHONE : POD_SOURCE_SD;
