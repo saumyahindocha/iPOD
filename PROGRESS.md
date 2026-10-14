@@ -2,6 +2,18 @@
 
 Newest entries at the top. Each entry: what was done, what broke, what's next.
 
+## 2026-10-14 (later) — Case Rev B: screwed, slimmer, part-accurate
+
+**Done**
+- Rev B replaces the snap-fit: four M2 screws from underneath into pegs on the bezel, heads countersunk under the rubber feet (nothing visible). The case grew 5.4 mm at each end for the screw blocks (57.2 × 125.0 × 21.8 mm) and lost 0.9 mm of height (floor 1.6, walls 1.8, 3 mm wire clearance)
+- Round Ø8.2 jack hole fully in the tray wall; cavities and slots sized from the ordered parts (TP4056 Type-C 29 × 17.3 × 4.3, right-angle slide switch 13 × 6.5 × 5.5, LiPo 403048, GY-PCM5102 ≈31 × 17.5); TP4056 moved to the right side under the screen because the top end is full
+- Video re-analysed: screen module ends ~8 mm before the board's top edge, so the window moved to centre y 60; Pico sits flat on the board (micro-USB slot lowered); DAC on a ~4 mm standoff
+- `hardware/case/`: new STL/STEP, `Pod_Case_RevB.pdf` with 1:1 templates, parametric source
+
+**Next**
+- Paper-check the window with the 1:1 template, measure the jack height once the new DAC is in, then print
+- Fit the new DAC (SCK to GND), run pod_dac_test; then battery, TP4056, switch
+
 ## 2026-10-14 — Case Rev A designed, parts on order
 
 **Done**

@@ -19,7 +19,7 @@ def render(meshes, elev, azim, name, title):
     fig.tight_layout(); fig.savefig(f"{out}/{name}.png", dpi=110); plt.close(fig)
 tray=trimesh.load(f"{out}/pod_tray.stl"); bez=trimesh.load(f"{out}/pod_bezel.stl")
 grey=(0.75,0.78,0.82); dark=(0.35,0.4,0.5)
-render([(tray,grey)], 35, -50, "r_tray_iso", "Lower tray, from above (USB end bottom-right)")
+render([(tray,grey)], 35, -50, "r_tray_iso", "Lower tray, from above (Pico end bottom-right)")
 render([(tray,grey)], 90, -90, "r_tray_top", "Lower tray, top view")
 flip=bez.copy(); flip.apply_transform(trimesh.transformations.rotation_matrix(np.pi,[1,0,0]))
 render([(flip,dark)], 35, -50, "r_bezel_under", "Upper bezel, turned over (inside)")
