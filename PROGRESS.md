@@ -2,6 +2,17 @@
 
 Newest entries at the top. Each entry: what was done, what broke, what's next.
 
+## 2026-10-14 — Case Rev A designed, parts on order
+
+**Done**
+- Case designed from the video walk-round: snap-fit tray + bezel, 57 × 114 × 23 mm, no external screws. Openings for jack, USB-C charging, Pico USB, microSD and the power switch; battery (403048) sits between the perfboard and the screen. STL/STEP + dimensioned PDF + 1:1 bezel template in `hardware/case/`
+- Ordered: replacement PCM5102 DAC (the Adafruit one died in the 10 Oct mis-wiring), TP4056 USB-C charger, 1000 mAh 403048 LiPo, right-angle slide switches, 1N5819, 100 nF
+
+**Next**
+- Paper-check the bezel window on the screen, measure jack height, then print
+- Fit the new DAC (five wires, SCK to GND on the generic board), run pod_dac_test
+- Battery, TP4056 and switch, then the case
+
 ## 2026-10-10 (later) — Device built and touch working
 
 **Done**
