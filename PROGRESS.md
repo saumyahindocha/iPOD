@@ -2,6 +2,14 @@
 
 Newest entries at the top. Each entry: what was done, what broke, what's next.
 
+## 2026-10-20 — GY-PCM5102 wiring sheet
+
+**Done**
+- `hardware/perfboard/gy_pcm5102_wiring.pdf`: wiring for the replacement DAC on the current pin map (DIN GP13/pin 17, BCK GP14/pin 19, LCK GP15/pin 20, VIN 3V3, GND, SCK→GND), the four back-side solder bridges (no. 3 XSMT → H or the chip stays muted), mounting position for the Rev B case, test order
+
+**Next**
+- Fit the DAC, run pod_dac_test, report the jack height for the case
+
 ## 2026-10-14 (later) — Case Rev B: screwed, slimmer, part-accurate
 
 **Done**
