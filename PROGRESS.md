@@ -2,6 +2,20 @@
 
 Newest entries at the top. Each entry: what was done, what broke, what's next.
 
+## 2026-10-25 — On hold for end-semester exams
+
+Project paused until after end-sems; no build work this week.
+
+**Where it stands**
+- Perfboard built (Pico 2 W, screen, links); boots to the home screen and touch works on USB power
+- Replacement GY-PCM5102 DAC on hand with its wiring sheet, not fitted yet; TP4056, LiPo and switch not fitted
+- Case Rev B designed (STL/STEP/PDF in `hardware/case/`), not printed
+
+**Next (when work resumes)**
+- Fit the DAC, run pod_dac_test, measure the jack height for the case
+- Test SD playback and Bluetooth from the phone
+- Paper-check the window with the 1:1 template, print Rev B; then battery, TP4056, switch
+
 ## 2026-10-20 — GY-PCM5102 wiring sheet
 
 **Done**

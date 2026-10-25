@@ -4,7 +4,7 @@
 
 A pocket-sized "modern iPod" built around the Raspberry Pi Pico 2 W. Pod receives audio from a phone over Bluetooth, plays it through a hi-fi I2S DAC, and shows album art on a touchscreen.
 
-**Status:** breadboard prototyping. A custom PCB comes after full testing and optimisation on the breadboard.
+**Status:** on hold for end-semester exams (since 25 Oct 2026). Perfboard prototype built and booting with working touch; DAC, battery and the 3D-printed case are next. A custom PCB design is in the repo for later.
 
 ## Goals
 
